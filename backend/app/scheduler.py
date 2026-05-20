@@ -16,8 +16,8 @@ def warm_overview() -> None:
     try:
         cache.set("finance:overview", finance_service.build_overview())
         logger.info("warmed finance:overview")
-    except Exception as e:
-        logger.warning("warm_overview failed: %s", e)
+    except Exception:
+        logger.warning("warm_overview failed", exc_info=True)
 
 
 def start_scheduler() -> BackgroundScheduler | None:
@@ -26,6 +26,9 @@ def start_scheduler() -> BackgroundScheduler | None:
     if not get_settings().scheduler_enabled:
         logger.info("scheduler disabled (set SCHEDULER_ENABLED=true to enable)")
         return None
+    if _scheduler is not None and _scheduler.running:
+        logger.warning("start_scheduler called while already running")
+        return _scheduler
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(warm_overview, "interval", minutes=10, id="warm_overview",
                   max_instances=1, coalesce=True)
@@ -36,6 +39,7 @@ def start_scheduler() -> BackgroundScheduler | None:
 
 
 def shutdown_scheduler() -> None:
+    """Stop the scheduler if running. Safe to call when not started."""
     global _scheduler
     if _scheduler is not None:
         _scheduler.shutdown(wait=False)

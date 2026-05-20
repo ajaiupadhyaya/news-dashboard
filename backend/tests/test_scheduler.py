@@ -22,3 +22,14 @@ def test_warm_overview_populates_cache(db, monkeypatch):
     assert cache.get("finance:overview") is None
     scheduler.warm_overview()
     assert cache.get("finance:overview") is not None
+
+
+def test_start_scheduler_is_idempotent(monkeypatch):
+    monkeypatch.setenv("SCHEDULER_ENABLED", "true")
+    try:
+        first = scheduler.start_scheduler()
+        second = scheduler.start_scheduler()
+        assert first is not None
+        assert first is second
+    finally:
+        scheduler.shutdown_scheduler()
