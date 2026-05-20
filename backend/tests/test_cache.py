@@ -40,3 +40,11 @@ def test_clear_empties_the_cache():
     c.set("k", 1)
     c.clear()
     assert c.get("k") is None
+
+
+def test_entry_expires_at_exact_ttl_boundary():
+    now = {"t": 0.0}
+    c = TTLCache(ttl_seconds=10, clock=lambda: now["t"])
+    c.set("k", "v")
+    now["t"] = 10.0          # exactly at expiry
+    assert c.get("k") is None

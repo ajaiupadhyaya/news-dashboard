@@ -18,7 +18,7 @@ class TTLCache:
         if entry is None:
             return None
         expires_at, value = entry
-        if self._clock() > expires_at:
+        if self._clock() >= expires_at:
             del self._store[key]
             return None
         return value
