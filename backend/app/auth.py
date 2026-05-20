@@ -20,7 +20,7 @@ def login(password: str) -> str:
             detail="Server misconfigured: set both DASHBOARD_TOKEN and "
                    "DASHBOARD_PASSWORD, or neither",
         )
-    if password != settings.dashboard_password:
+    if not hmac.compare_digest(password, settings.dashboard_password):
         raise HTTPException(status_code=401, detail="Invalid password")
     return settings.dashboard_token
 

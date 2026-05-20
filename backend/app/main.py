@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,9 +12,6 @@ from app.routes.finance import router as finance_router
 from app.routes.health import router as health_router
 from app.routes.watchlist import router as watchlist_router
 from app.scheduler import shutdown_scheduler, start_scheduler
-
-# Load backend/.env (if present) before any settings are read.
-load_dotenv()
 
 
 @asynccontextmanager

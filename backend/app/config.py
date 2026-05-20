@@ -1,6 +1,11 @@
 import os
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+# Load backend/.env (if present) once, before any settings are read.
+load_dotenv()
+
 
 @dataclass(frozen=True)
 class Settings:
