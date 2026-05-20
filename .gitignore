@@ -1,5 +1,8 @@
 # Visual companion / brainstorm scratch
 .superpowers/
 
+# Git worktrees
+.worktrees/
+
 # OS
 .DS_Store
