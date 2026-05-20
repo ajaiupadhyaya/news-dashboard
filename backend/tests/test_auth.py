@@ -53,3 +53,11 @@ def test_login_route_and_status(monkeypatch):
     assert resp.json() == {"token": "tok-1"}
     status = client.get("/api/auth/status")
     assert status.json() == {"auth_enabled": True}
+
+
+def test_login_rejects_half_configured_auth(monkeypatch):
+    monkeypatch.setenv("DASHBOARD_TOKEN", "tok-1")
+    monkeypatch.delenv("DASHBOARD_PASSWORD", raising=False)
+    with pytest.raises(HTTPException) as exc:
+        login("anything")
+    assert exc.value.status_code == 500
