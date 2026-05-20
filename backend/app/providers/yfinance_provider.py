@@ -55,7 +55,7 @@ def get_fundamentals(symbol: str) -> Fundamentals | None:
     except Exception as e:
         logger.warning("get_fundamentals(%s) failed: %s", symbol, e)
         return None
-    if not info:
+    if not info or not isinstance(info, dict):
         return None
     return Fundamentals(
         symbol=symbol,

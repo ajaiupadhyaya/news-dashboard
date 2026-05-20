@@ -71,3 +71,19 @@ def test_get_history_returns_empty_on_error(monkeypatch):
     monkeypatch.setattr(yfinance_provider, "yf", BoomYF)
     assert yfinance_provider.get_history("AAPL") == []
     assert yfinance_provider.get_quote("AAPL") is None
+
+
+def test_get_fundamentals_returns_none_on_error(monkeypatch):
+    class BoomTicker:
+        def __init__(self, symbol):
+            pass
+
+        @property
+        def info(self):
+            raise RuntimeError("network down")
+
+    class BoomYF:
+        Ticker = BoomTicker
+
+    monkeypatch.setattr(yfinance_provider, "yf", BoomYF)
+    assert yfinance_provider.get_fundamentals("AAPL") is None
