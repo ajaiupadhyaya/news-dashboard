@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useViewTransitionState } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import type { WatchlistQuote } from '../lib/types';
 import { Sparkline } from '../charts/Sparkline';
@@ -76,17 +76,27 @@ function WatchlistRow({
   quote: WatchlistQuote;
   onRemove: () => void;
 }) {
+  const to = `/finance/${encodeURIComponent(quote.symbol)}`;
+  // True while a view transition to this row's drill-down is in flight —
+  // gives the sparkline the shared name so it morphs into the chart panel.
+  const transitioning = useViewTransitionState(to);
+
   return (
     <div className="group flex items-center gap-2 rounded-md px-2 py-1.5
                     transition-colors hover:bg-raised">
-      <Link
-        to={`/finance/${encodeURIComponent(quote.symbol)}`}
-        className="flex flex-1 items-center gap-3"
-      >
+      <Link to={to} viewTransition className="flex flex-1 items-center gap-3">
         <span className="w-14 font-mono text-xs font-medium text-ink">
           {quote.symbol}
         </span>
-        <Sparkline values={quote.sparkline} />
+        <span
+          style={
+            transitioning
+              ? { viewTransitionName: 'instrument-hero' }
+              : undefined
+          }
+        >
+          <Sparkline values={quote.sparkline} />
+        </span>
         <span className="ml-auto font-mono text-xs tabular-nums text-ink">
           {formatPrice(quote.price)}
         </span>
