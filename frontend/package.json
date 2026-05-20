@@ -1,0 +1,50 @@
+{
+  "name": "news-dashboard-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@tanstack/react-query": "^5.100.11",
+    "clsx": "^2.1.1",
+    "d3-array": "^3.2.4",
+    "d3-format": "^3.1.2",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0",
+    "d3-time-format": "^4.1.0",
+    "motion": "^12.39.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/d3-array": "^3.2.2",
+    "@types/d3-format": "^3.0.4",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.1.8",
+    "@types/d3-time-format": "^4.0.3",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "vitest": "^4.1.7"
+  }
+}
