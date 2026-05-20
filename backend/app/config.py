@@ -19,6 +19,16 @@ def _env_list(name: str, default: str) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from None
+
+
 def get_settings() -> Settings:
     """Read settings from the environment on every call (no caching) so tests
     that mutate env vars see fresh values."""
@@ -30,6 +40,6 @@ def get_settings() -> Settings:
         in ("1", "true", "yes"),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         cors_origins=_env_list("CORS_ORIGINS", "*"),
-        cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "300")),
+        cache_ttl_seconds=_env_int("CACHE_TTL_SECONDS", 300),
         watchlist_default=_env_list("WATCHLIST_DEFAULT", "AAPL,MSFT,NVDA,GOOGL,AMZN"),
     )
