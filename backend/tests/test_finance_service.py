@@ -45,3 +45,19 @@ def test_build_instrument_returns_bars_and_technicals(db, monkeypatch):
 def test_build_instrument_none_when_no_data(db, monkeypatch):
     monkeypatch.setattr(yfinance_provider, "get_history", lambda *a, **k: [])
     assert finance_service.build_instrument("ZZZZ") is None
+
+
+def test_build_instrument_survives_save_failure(db, monkeypatch):
+    closes = [100.0 + i for i in range(30)]
+    monkeypatch.setattr(yfinance_provider, "get_history",
+                        lambda *a, **k: _bars(closes))
+    monkeypatch.setattr(yfinance_provider, "get_fundamentals",
+                        lambda sym: Fundamentals(symbol=sym, name="Test Co"))
+
+    def _boom(*a, **k):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(finance_service, "save_ohlcv", _boom)
+    result = finance_service.build_instrument("AAPL")
+    assert result is not None
+    assert result.symbol == "AAPL"

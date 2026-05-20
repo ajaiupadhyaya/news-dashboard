@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from app.analysis import metrics
@@ -8,6 +9,8 @@ from app.models import (Breadth, Fundamentals, InstrumentResponse,
                         Technicals, WatchlistQuote)
 from app.providers import yfinance_provider as provider
 from app.store import get_watchlist
+
+logger = logging.getLogger(__name__)
 
 INDICES = [("^GSPC", "S&P 500"), ("^DJI", "Dow Jones"), ("^IXIC", "Nasdaq"),
            ("^RUT", "Russell 2000"), ("^VIX", "VIX")]
@@ -33,6 +36,8 @@ def build_overview() -> OverviewResponse:
         bars = provider.get_history(sym, period="1mo", interval="1d")
         if not bars:
             continue
+        # change/change_pct are computed directly from the 1mo bars already
+        # fetched for the sparkline, avoiding a redundant get_quote() fetch.
         last = bars[-1]
         prev_close = bars[-2].close if len(bars) >= 2 else last.open
         change = round(last.close - prev_close, 4)
@@ -66,7 +71,11 @@ def build_instrument(symbol: str) -> InstrumentResponse | None:
     bars = provider.get_history(symbol, period="2y", interval="1d")
     if not bars:
         return None
-    save_ohlcv(symbol, bars)
+    try:
+        save_ohlcv(symbol, bars)
+    except Exception as exc:
+        logger.warning("save_ohlcv(%s) failed — skipping persistence: %s",
+                       symbol, exc)
 
     closes = [b.close for b in bars]
     profile = (provider.get_fundamentals(symbol)
