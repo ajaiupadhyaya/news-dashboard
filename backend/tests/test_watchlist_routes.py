@@ -15,7 +15,7 @@ def test_watchlist_crud_flow(db):
     client.post("/api/watchlist", json={"symbol": "MSFT"})
     assert client.get("/api/watchlist").json() == {"symbols": ["AAPL", "MSFT"]}
 
-    resp = client.delete("/api/watchlist/AAPL")
+    resp = client.delete("/api/watchlist/aapl")
     assert resp.json() == {"symbols": ["MSFT"]}
 
 

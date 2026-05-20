@@ -27,5 +27,5 @@ def add_symbol(body: SymbolBody) -> dict:
 
 @router.delete("/{symbol}")
 def delete_symbol(symbol: str) -> dict:
-    remove_from_watchlist(symbol)
+    remove_from_watchlist(symbol.strip().upper())
     return {"symbols": get_watchlist()}
