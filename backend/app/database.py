@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 
 from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
                         create_engine, delete, insert, select)
@@ -9,6 +9,8 @@ from app.config import get_settings
 from app.models import Bar
 
 logger = logging.getLogger(__name__)
+_BASE_DIR = Path(__file__).resolve().parent.parent  # the backend/ directory
+
 metadata = MetaData()
 
 ohlcv = Table(
@@ -42,8 +44,9 @@ def _resolve_url() -> str:
     url = get_settings().database_url
     if url:
         return url
-    os.makedirs("data", exist_ok=True)
-    return "sqlite:///data/dashboard.db"
+    data_dir = _BASE_DIR / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{data_dir / 'dashboard.db'}"
 
 
 def get_engine() -> Engine:
