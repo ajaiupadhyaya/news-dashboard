@@ -30,3 +30,4 @@ def test_json_formatter_emits_request_id():
     assert payload["message"] == "hello"
     assert payload["request_id"] == "rid-9"
     assert payload["level"] == "INFO"
+    assert "ts" in payload
