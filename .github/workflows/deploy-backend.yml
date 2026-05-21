@@ -1,0 +1,42 @@
+name: Deploy backend (Fly.io)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — require FLY_API_TOKEN
+        id: guard
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "FLY_API_TOKEN is not set — skipping deploy."
+            echo "Add it under Settings → Secrets and variables → Actions to enable auto-deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up flyctl
+        if: steps.guard.outputs.skip != 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        if: steps.guard.outputs.skip != 'true'
+        run: flyctl deploy ./backend --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
