@@ -1,0 +1,14 @@
+.venv/
+**/__pycache__/
+*.pyc
+data/
+.env
+.env.example
+.pytest_cache/
+tests/
+README.md
+.gitignore
+.dockerignore
+Dockerfile
+fly.toml
+requirements-dev.txt
