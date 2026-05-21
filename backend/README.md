@@ -35,5 +35,11 @@ cd backend && python -m pytest -v
 
 ## Configuration
 
-See `.env.example`. Auth is disabled unless `DASHBOARD_TOKEN` is set. The
+See `.env.example`. Auth is open only when both `DASHBOARD_TOKEN` and `DASHBOARD_PASSWORD` are unset; for production set both (setting only one returns a 500). The
 database defaults to local SQLite; set `DATABASE_URL` to Postgres for production.
+
+## Deployment
+
+The backend runs as a Docker container on Fly.io. See the repo-root
+[`DEPLOY.md`](../DEPLOY.md) for the full runbook. Production configuration is
+supplied via environment variables / Fly secrets - never committed.

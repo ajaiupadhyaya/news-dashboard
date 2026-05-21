@@ -46,3 +46,9 @@ Tests mock the backend and do not require it to be running.
 - `src/components/` — app shell and the generic domain panel
 - `src/finance/` — the Finance domain (overview panel + drill-down pieces)
 - `src/routes/` — the Home dashboard and the instrument drill-down route
+
+## Deployment
+
+The frontend deploys to Vercel and auto-builds on push to `main`. Set
+`VITE_API_BASE_URL` to the deployed backend URL in the Vercel project. See the
+repo-root [`DEPLOY.md`](../DEPLOY.md) for the full runbook.
