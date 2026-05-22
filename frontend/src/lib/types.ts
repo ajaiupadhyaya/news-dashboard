@@ -61,6 +61,16 @@ export interface Technicals {
   sma_20: (number | null)[];
   sma_50: (number | null)[];
   sma_200: (number | null)[];
+  // Enrichment fields — the backend always sends these; optional here so
+  // older fixtures stay valid and consumers degrade gracefully.
+  rsi?: (number | null)[];
+  macd_line?: (number | null)[];
+  macd_signal?: (number | null)[];
+  macd_histogram?: (number | null)[];
+  bb_upper?: (number | null)[];
+  bb_middle?: (number | null)[];
+  bb_lower?: (number | null)[];
+  volume?: number[];
 }
 
 export interface InstrumentStats {
@@ -72,12 +82,23 @@ export interface InstrumentStats {
   week52_low: number | null;
 }
 
+export interface Returns {
+  week_1: number | null;
+  month_1: number | null;
+  month_3: number | null;
+  month_6: number | null;
+  ytd: number | null;
+  year_1: number | null;
+  year_3: number | null;
+}
+
 export interface InstrumentResponse {
   symbol: string;
   profile: Fundamentals;
   bars: Bar[];
   technicals: Technicals;
   stats: InstrumentStats;
+  returns?: Returns;
   updated_at: string;
 }
 

@@ -59,9 +59,9 @@ export const api = {
 
   overview: () => apiFetch<OverviewResponse>('/api/finance/overview'),
 
-  instrument: (symbol: string) =>
+  instrument: (symbol: string, range = '1y') =>
     apiFetch<InstrumentResponse>(
-      `/api/finance/instrument/${encodeURIComponent(symbol)}`,
+      `/api/finance/instrument/${encodeURIComponent(symbol)}?range=${range}`,
     ),
 
   addWatchlist: (symbol: string) =>

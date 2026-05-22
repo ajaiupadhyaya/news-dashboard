@@ -43,3 +43,37 @@ test('api.instrument URL-encodes symbols with special characters', async () => {
   await api.instrument('^GSPC');
   expect(f.mock.calls[0][0]).toContain('/api/finance/instrument/%5EGSPC');
 });
+
+test('instrument requests include the range query param', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ symbol: 'AAPL' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const { api } = await import('./api');
+  await api.instrument('AAPL', '5y');
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining('/api/finance/instrument/AAPL?range=5y'),
+    expect.anything(),
+  );
+  vi.unstubAllGlobals();
+});
+
+test('instrument defaults the range to 1y', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ symbol: 'AAPL' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const { api } = await import('./api');
+  await api.instrument('AAPL');
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining('range=1y'),
+    expect.anything(),
+  );
+  vi.unstubAllGlobals();
+});
