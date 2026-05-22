@@ -52,3 +52,26 @@ def test_recession_status_sahm():
     assert em.recession_status("sahm", 0.6)[0] == "alert"
     assert em.recession_status("sahm", 0.35)[0] == "warning"
     assert em.recession_status("sahm", 0.1)[0] == "normal"
+
+
+def test_recession_intervals_finds_contiguous_runs():
+    pts = _points([("2020-01-01", 0), ("2020-02-01", 1), ("2020-03-01", 1),
+                   ("2020-04-01", 0), ("2020-05-01", 0)])
+    assert em.recession_intervals(pts) == [("2020-02-01", "2020-04-01")]
+
+
+def test_recession_intervals_handles_open_final_run():
+    pts = _points([("2020-01-01", 0), ("2020-02-01", 1), ("2020-03-01", 1)])
+    assert em.recession_intervals(pts) == [("2020-02-01", "2020-03-01")]
+
+
+def test_recession_intervals_empty_when_no_recession():
+    pts = _points([("2020-01-01", 0), ("2020-02-01", 0)])
+    assert em.recession_intervals(pts) == []
+
+
+def test_recession_intervals_handles_multiple_runs():
+    pts = _points([("2001-01-01", 1), ("2001-02-01", 0), ("2008-01-01", 1),
+                   ("2008-02-01", 0)])
+    assert em.recession_intervals(pts) == [
+        ("2001-01-01", "2001-02-01"), ("2008-01-01", "2008-02-01")]

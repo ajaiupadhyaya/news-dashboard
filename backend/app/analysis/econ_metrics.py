@@ -74,6 +74,23 @@ def momentum_score(values: list[float], window: int = 6) -> float:
     return round((values[-1] - base) / base * 100, 4) if base else 0.0
 
 
+def recession_intervals(points: list[IndicatorPoint]) -> list[tuple[str, str]]:
+    """Contiguous (start_date, end_date) intervals where a 0/1 indicator
+    series is 'on' (value >= 0.5). An interval ends at the first observation
+    back below the threshold; an open final run ends at the last point."""
+    intervals: list[tuple[str, str]] = []
+    start: str | None = None
+    for p in points:
+        if p.value >= 0.5 and start is None:
+            start = p.date
+        elif p.value < 0.5 and start is not None:
+            intervals.append((start, p.date))
+            start = None
+    if start is not None and points:
+        intervals.append((start, points[-1].date))
+    return intervals
+
+
 def recession_status(signal: str, value: float) -> tuple[str, str]:
     """Status + plain-language detail for a recession signal.
 
