@@ -15,6 +15,7 @@ test('renders the breadth gauge and the VIX level', () => {
   expect(screen.getByText(/6 adv/)).toBeInTheDocument();
   expect(screen.getByText('VIX')).toBeInTheDocument();
   expect(screen.getByText('14.20')).toBeInTheDocument();
+  expect(screen.getByText('-2.10%')).toBeInTheDocument();
 });
 
 test('omits the VIX block when no VIX quote is available', () => {
