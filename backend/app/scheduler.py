@@ -33,10 +33,15 @@ def warm_economics() -> None:
     """Recompute the Economics overview + dashboard and store them in cache."""
     try:
         cache.set("economics:overview", economics_service.build_overview())
-        cache.set("economics:dashboard", economics_service.build_dashboard())
-        logger.info("warmed economics:overview + economics:dashboard")
     except Exception:
-        logger.warning("warm_economics failed", exc_info=True)
+        logger.warning("warm_economics: overview step failed", exc_info=True)
+        return
+    try:
+        cache.set("economics:dashboard", economics_service.build_dashboard())
+    except Exception:
+        logger.warning("warm_economics: dashboard step failed", exc_info=True)
+        return
+    logger.info("warmed economics:overview + economics:dashboard")
 
 
 def start_scheduler() -> BackgroundScheduler | None:
