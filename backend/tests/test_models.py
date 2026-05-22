@@ -119,3 +119,47 @@ def test_markets_response_model():
     assert markets.asset_classes[0].label == "Crypto"
     assert markets.gainers[0].change_pct == 9.0
     assert markets.losers[0].symbol == "BBB"
+
+
+def test_recession_period_model():
+    from app.models import RecessionPeriod
+    p = RecessionPeriod(start="2020-02-01", end="2020-04-01")
+    assert p.start == "2020-02-01"
+    assert p.end == "2020-04-01"
+
+
+def test_indicator_summary_has_optional_category():
+    from app.models import IndicatorSummary
+    s = IndicatorSummary(
+        series_id="CPIAUCSL", name="Inflation (CPI)", unit="%",
+        category="Inflation", latest=3.0, latest_date="2026-04-01",
+        change=0.1, trend="in", sparkline=[1.0, 2.0])
+    assert s.category == "Inflation"
+    # category defaults to "" so older constructions stay valid
+    s2 = IndicatorSummary(
+        series_id="UNRATE", name="Unemployment Rate", unit="%", latest=4.0,
+        latest_date="2026-04-01", change=0.0, trend="in", sparkline=[1.0])
+    assert s2.category == ""
+
+
+def test_indicator_detail_has_recession_periods_default():
+    from app.models import IndicatorDetail
+    d = IndicatorDetail(
+        series_id="UNRATE", name="Unemployment Rate", unit="%", series=[],
+        latest=4.0, change=0.0, range_low=3.0, range_high=5.0, momentum=0.0,
+        recession_signals=[], updated_at="t")
+    assert d.recession_periods == []
+
+
+def test_economics_dashboard_model():
+    from app.models import (EconomicsDashboard, IndicatorCategory,
+                            IndicatorSummary)
+    summary = IndicatorSummary(
+        series_id="CPIAUCSL", name="Inflation (CPI)", unit="%",
+        category="Inflation", latest=3.0, latest_date="2026-04-01",
+        change=0.1, trend="in", sparkline=[1.0, 2.0])
+    cat = IndicatorCategory(name="Inflation", indicators=[summary])
+    dash = EconomicsDashboard(categories=[cat], recession_signals=[],
+                              calendar=[], updated_at="t")
+    assert dash.categories[0].name == "Inflation"
+    assert dash.categories[0].indicators[0].category == "Inflation"

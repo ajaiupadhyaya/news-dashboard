@@ -115,6 +115,7 @@ class ReleaseEvent(BaseModel):
 class IndicatorSummary(BaseModel):
     series_id: str
     name: str
+    category: str = ""     # macro category; "" for the home-panel overview
     unit: str          # display unit: "%", "K", "index", "$"
     latest: float      # headline value
     latest_date: str
@@ -136,6 +137,11 @@ class RecessionSignal(BaseModel):
     detail: str        # plain-language one-liner
 
 
+class RecessionPeriod(BaseModel):
+    start: str         # ISO date the NBER recession began
+    end: str           # ISO date the recession ended
+
+
 class IndicatorDetail(BaseModel):
     series_id: str
     name: str
@@ -148,6 +154,19 @@ class IndicatorDetail(BaseModel):
     range_high: float
     momentum: float                # momentum/trend composite score
     recession_signals: list[RecessionSignal]
+    recession_periods: list[RecessionPeriod] = []
+    updated_at: str
+
+
+class IndicatorCategory(BaseModel):
+    name: str          # "Growth" | "Inflation" | "Labor" | "Rates" | "Housing" | "Consumer"
+    indicators: list[IndicatorSummary]
+
+
+class EconomicsDashboard(BaseModel):
+    categories: list[IndicatorCategory]
+    recession_signals: list[RecessionSignal]
+    calendar: list[ReleaseEvent]
     updated_at: str
 
 
