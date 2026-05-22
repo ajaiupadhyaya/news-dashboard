@@ -23,3 +23,23 @@ def test_save_ohlcv_replaces_previous_rows(db):
 
 def test_load_ohlcv_unknown_symbol_returns_empty(db):
     assert load_ohlcv("ZZZZ") == []
+
+
+def test_econ_series_round_trips(db):
+    from app.database import load_econ_series, save_econ_series
+    from app.models import IndicatorPoint
+    points = [IndicatorPoint(date="2026-01-01", value=2.9),
+              IndicatorPoint(date="2026-02-01", value=3.1)]
+    save_econ_series("CPIAUCSL", points)
+    loaded = load_econ_series("CPIAUCSL")
+    assert [p.date for p in loaded] == ["2026-01-01", "2026-02-01"]
+    assert loaded[1].value == 3.1
+
+
+def test_save_econ_series_replaces_prior(db):
+    from app.database import load_econ_series, save_econ_series
+    from app.models import IndicatorPoint
+    save_econ_series("UNRATE", [IndicatorPoint(date="2026-01-01", value=4.0)])
+    save_econ_series("UNRATE", [IndicatorPoint(date="2026-02-01", value=4.1)])
+    loaded = load_econ_series("UNRATE")
+    assert len(loaded) == 1 and loaded[0].date == "2026-02-01"

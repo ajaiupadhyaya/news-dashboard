@@ -6,7 +6,7 @@ from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
 from sqlalchemy.engine import Engine
 
 from app.config import get_settings
-from app.models import Bar
+from app.models import Bar, IndicatorPoint
 
 logger = logging.getLogger(__name__)
 _BASE_DIR = Path(__file__).resolve().parent.parent  # the backend/ directory
@@ -35,6 +35,13 @@ preferences = Table(
     "preferences", metadata,
     Column("key", String(64), primary_key=True),
     Column("value", Text),
+)
+
+econ_series = Table(
+    "econ_series", metadata,
+    Column("series_id", String(32), primary_key=True),
+    Column("date", String(10), primary_key=True),
+    Column("value", Float),
 )
 
 _engine: Engine | None = None
@@ -95,3 +102,26 @@ def load_ohlcv(symbol: str) -> list[Bar]:
         ).mappings().all()
     return [Bar(date=r["date"], open=r["open"], high=r["high"], low=r["low"],
                 close=r["close"], volume=r["volume"]) for r in rows]
+
+
+def save_econ_series(series_id: str, points: list[IndicatorPoint]) -> None:
+    """Replace all stored points for `series_id` with `points`."""
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(delete(econ_series).where(
+            econ_series.c.series_id == series_id))
+        if points:
+            conn.execute(insert(econ_series), [
+                {"series_id": series_id, "date": p.date, "value": p.value}
+                for p in points
+            ])
+
+
+def load_econ_series(series_id: str) -> list[IndicatorPoint]:
+    engine = get_engine()
+    with engine.begin() as conn:
+        rows = conn.execute(
+            select(econ_series).where(econ_series.c.series_id == series_id)
+            .order_by(econ_series.c.date)
+        ).mappings().all()
+    return [IndicatorPoint(date=r["date"], value=r["value"]) for r in rows]
