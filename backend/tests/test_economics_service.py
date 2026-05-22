@@ -15,7 +15,7 @@ def test_build_overview_assembles_indicators_and_calendar(db, monkeypatch):
                         lambda: [ReleaseEvent(date="2026-05-13",
                                               release_name="CPI")])
     overview = economics_service.build_overview()
-    assert len(overview.indicators) == len(economics_service.INDICATORS)
+    assert len(overview.indicators) == len(economics_service.OVERVIEW_IDS)
     first = overview.indicators[0]
     assert first.series_id
     assert first.sparkline           # non-empty
@@ -52,3 +52,14 @@ def test_build_indicator_none_for_unknown(db, monkeypatch):
 def test_build_indicator_none_when_no_data(db, monkeypatch):
     monkeypatch.setattr(fred_provider, "get_series", lambda series_id, **kw: [])
     assert economics_service.build_indicator("UNRATE") is None
+
+
+def test_indicator_registry_is_categorized():
+    from app.services import economics_service as es
+    assert len(es.INDICATORS) == 20
+    assert es.CATEGORY_ORDER == [
+        "Growth", "Inflation", "Labor", "Rates", "Housing", "Consumer"]
+    assert all(ind.category in es.CATEGORY_ORDER for ind in es.INDICATORS)
+    ids = {ind.series_id for ind in es.INDICATORS}
+    assert len(ids) == 20                         # no duplicates
+    assert set(es.OVERVIEW_IDS).issubset(ids)
