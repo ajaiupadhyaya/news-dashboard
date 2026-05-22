@@ -48,3 +48,38 @@ def test_refresh_news_falls_back_when_embeddings_unavailable(db, monkeypatch):
     news_service.refresh_news()
     from app.database import load_news_clusters
     assert len(load_news_clusters()) == 2
+
+
+def test_build_overview_returns_ranked_stories(db, monkeypatch):
+    articles = [_article(0, 1), _article(1, 2), _article(2, 3)]
+    _patch_sources(monkeypatch, articles,
+                   [[1.0, 0.0], [0.99, 0.01], [0.0, 1.0]])
+    news_service.refresh_news()
+    overview = news_service.build_overview()
+    assert len(overview.stories) == 2
+    assert overview.updated_at
+    assert overview.stories[0].status in ("surging", "steady", "fading")
+
+
+def test_build_overview_empty_when_nothing_persisted(db):
+    overview = news_service.build_overview()
+    assert overview.stories == []
+    assert overview.updated_at
+
+
+def test_build_story_returns_detail_with_timeline(db, monkeypatch):
+    articles = [_article(0, 1), _article(1, 2), _article(2, 3)]
+    _patch_sources(monkeypatch, articles,
+                   [[1.0, 0.0], [0.99, 0.01], [0.0, 1.0]])
+    news_service.refresh_news()
+    overview = news_service.build_overview()
+    detail = news_service.build_story(overview.stories[0].id)
+    assert detail is not None
+    assert detail.id == overview.stories[0].id
+    assert len(detail.articles) >= 1
+    assert isinstance(detail.momentum_series, list)
+    assert isinstance(detail.related, list)
+
+
+def test_build_story_unknown_id_returns_none(db):
+    assert news_service.build_story("does-not-exist") is None

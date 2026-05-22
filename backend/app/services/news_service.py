@@ -7,8 +7,10 @@ from datetime import datetime, timedelta, timezone
 
 from app.analysis import news_clustering as nc
 from app.analysis import news_metrics as nm
-from app.database import ClusterRecord, save_news
-from app.models import Article
+from app.database import (ClusterRecord, load_news_cluster,
+                          load_news_clusters, save_news)
+from app.models import (Article, MomentumPoint, NewsOverview, StoryCluster,
+                        StoryDetail)
 from app.providers import news_api_provider, rss_provider
 from app.services import embeddings
 
@@ -105,3 +107,62 @@ def refresh_news() -> None:
     save_news(records[:MAX_CLUSTERS])
     logger.info("refresh_news: saved %d clusters from %d articles",
                 min(len(records), MAX_CLUSTERS), len(articles))
+
+
+def _to_story_cluster(record: ClusterRecord) -> StoryCluster:
+    return StoryCluster(
+        id=record.id, headline=record.headline, summary=record.summary,
+        category=record.category, source_count=record.source_count,
+        article_count=record.article_count, momentum=record.momentum,
+        status=record.status,
+        latest_published_at=record.latest_published_at)
+
+
+def build_overview() -> NewsOverview:
+    """The News overview — the top-ranked story clusters. Reads the
+    persisted snapshot; empty-but-valid when nothing has been ingested."""
+    clusters = load_news_clusters()
+    stories = [_to_story_cluster(c) for c in clusters[:OVERVIEW_LIMIT]]
+    return NewsOverview(stories=stories, updated_at=_now().isoformat())
+
+
+def _momentum_series(articles: list[Article]) -> list[MomentumPoint]:
+    """Hourly article counts across the cluster's coverage span."""
+    buckets: dict[str, int] = {}
+    for article in articles:
+        dt = nm.parse_timestamp(article.published_at)
+        if dt is None:
+            continue
+        hour = dt.replace(minute=0, second=0, microsecond=0)
+        key = hour.isoformat()
+        buckets[key] = buckets.get(key, 0) + 1
+    return [MomentumPoint(time=k, count=buckets[k]) for k in sorted(buckets)]
+
+
+def _related(cluster: ClusterRecord) -> list[StoryCluster]:
+    """Other clusters most similar to `cluster` by centroid cosine."""
+    if not cluster.centroid:
+        return []
+    scored: list[tuple[float, ClusterRecord]] = []
+    for other in load_news_clusters():
+        if other.id == cluster.id or not other.centroid:
+            continue
+        sim = nc.cosine_similarity(cluster.centroid, other.centroid)
+        if sim >= RELATED_MIN_SIMILARITY:
+            scored.append((sim, other))
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [_to_story_cluster(o) for _, o in scored[:RELATED_LIMIT]]
+
+
+def build_story(cluster_id: str) -> StoryDetail | None:
+    """The drill-down for one story cluster. None if the id is unknown."""
+    cluster = load_news_cluster(cluster_id)
+    if cluster is None:
+        return None
+    return StoryDetail(
+        id=cluster.id, headline=cluster.headline, summary=cluster.summary,
+        category=cluster.category, source_count=cluster.source_count,
+        article_count=cluster.article_count, momentum=cluster.momentum,
+        status=cluster.status, articles=cluster.articles,
+        momentum_series=_momentum_series(cluster.articles),
+        related=_related(cluster), updated_at=_now().isoformat())
