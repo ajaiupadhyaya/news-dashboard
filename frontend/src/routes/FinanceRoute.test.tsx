@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../test/utils';
 import { FinanceRoute } from './FinanceRoute';
@@ -74,6 +74,12 @@ vi.mock('../lib/api', () => ({
   },
 }));
 
+beforeEach(() => {
+  marketsFn.mockReset();
+  overviewFn.mockReset();
+  instrumentFn.mockReset();
+});
+
 test('renders the bento grid of market tiles', async () => {
   marketsFn.mockResolvedValue(markets);
   overviewFn.mockResolvedValue(overview);
@@ -85,6 +91,9 @@ test('renders the bento grid of market tiles', async () => {
   expect(screen.getByText('Market Chart')).toBeInTheDocument();
   expect(screen.getByText('Top Movers')).toBeInTheDocument();
   expect(screen.getByText('Watchlist')).toBeInTheDocument();
+  expect(screen.getByText('Internals')).toBeInTheDocument();
+  expect(screen.getByText('Indices')).toBeInTheDocument();
+  expect(screen.getByText('Sectors')).toBeInTheDocument();
   // Data from the tiles.
   expect(screen.getByText('Equities')).toBeInTheDocument();
   expect(screen.getByText('NVDA')).toBeInTheDocument();
