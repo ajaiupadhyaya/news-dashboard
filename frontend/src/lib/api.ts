@@ -3,7 +3,9 @@ import type {
   IndicatorDetail,
   InstrumentResponse,
   MarketsResponse,
+  NewsOverview,
   OverviewResponse,
+  StoryDetail,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000';
@@ -85,5 +87,12 @@ export const api = {
   indicator: (seriesId: string) =>
     apiFetch<IndicatorDetail>(
       `/api/economics/indicator/${encodeURIComponent(seriesId)}`,
+    ),
+
+  newsOverview: () => apiFetch<NewsOverview>('/api/news/overview'),
+
+  story: (clusterId: string) =>
+    apiFetch<StoryDetail>(
+      `/api/news/story/${encodeURIComponent(clusterId)}`,
     ),
 };

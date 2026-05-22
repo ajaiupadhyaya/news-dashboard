@@ -163,3 +163,29 @@ def test_economics_dashboard_model():
                               calendar=[], updated_at="t")
     assert dash.categories[0].name == "Inflation"
     assert dash.categories[0].indicators[0].category == "Inflation"
+
+
+def test_news_models_round_trip():
+    from app.models import (Article, MomentumPoint, NewsOverview, StoryCluster,
+                            StoryDetail)
+    art = Article(id="a1", title="A headline", summary="A summary",
+                  url="https://ex.com/1", source="Example News",
+                  published_at="2026-05-22T10:00:00+00:00", category="general")
+    cluster = StoryCluster(id="c1", headline="A headline", summary="A summary",
+                           category="general", source_count=3, article_count=5,
+                           momentum=1.8, status="surging",
+                           latest_published_at="2026-05-22T11:00:00+00:00")
+    overview = NewsOverview(stories=[cluster],
+                            updated_at="2026-05-22T12:00:00+00:00")
+    detail = StoryDetail(
+        id="c1", headline="A headline", summary="A summary", category="general",
+        source_count=3, article_count=5, momentum=1.8, status="surging",
+        articles=[art],
+        momentum_series=[MomentumPoint(time="2026-05-22T10:00:00+00:00",
+                                       count=2)],
+        related=[cluster], updated_at="2026-05-22T12:00:00+00:00")
+    assert overview.stories[0].id == "c1"
+    assert detail.articles[0].source == "Example News"
+    assert detail.momentum_series[0].count == 2
+    assert detail.related[0].status == "surging"
+    assert art.image_url is None

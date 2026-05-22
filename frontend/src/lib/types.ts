@@ -183,3 +183,55 @@ export interface MarketsResponse {
   breadth: Breadth;
   updated_at: string;
 }
+
+/** News domain (Phase 3) — mirrors the backend news models. */
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  published_at: string;
+  category: string;
+  image_url: string | null;
+}
+
+export type StoryStatus = 'surging' | 'steady' | 'fading';
+
+export interface StoryCluster {
+  id: string;
+  headline: string;
+  summary: string;
+  category: string;
+  source_count: number;
+  article_count: number;
+  momentum: number;
+  status: StoryStatus;
+  latest_published_at: string;
+}
+
+export interface NewsOverview {
+  stories: StoryCluster[];
+  updated_at: string;
+}
+
+export interface MomentumPoint {
+  time: string;
+  count: number;
+}
+
+export interface StoryDetail {
+  id: string;
+  headline: string;
+  summary: string;
+  category: string;
+  source_count: number;
+  article_count: number;
+  momentum: number;
+  status: StoryStatus;
+  articles: NewsArticle[];
+  momentum_series: MomentumPoint[];
+  related: StoryCluster[];
+  updated_at: string;
+}

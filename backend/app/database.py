@@ -1,4 +1,6 @@
+import json
 import logging
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
@@ -6,7 +8,7 @@ from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
 from sqlalchemy.engine import Engine
 
 from app.config import get_settings
-from app.models import Bar, IndicatorPoint
+from app.models import Article, Bar, IndicatorPoint
 
 logger = logging.getLogger(__name__)
 _BASE_DIR = Path(__file__).resolve().parent.parent  # the backend/ directory
@@ -42,6 +44,35 @@ econ_series = Table(
     Column("series_id", String(32), primary_key=True),
     Column("date", String(10), primary_key=True),
     Column("value", Float),
+)
+
+news_articles = Table(
+    "news_articles", metadata,
+    Column("id", String(64), primary_key=True),
+    Column("cluster_id", String(64)),
+    Column("title", Text),
+    Column("summary", Text),
+    Column("url", Text),
+    Column("source", String(80)),
+    Column("published_at", String(32)),
+    Column("category", String(40)),
+    Column("image_url", Text),
+)
+
+news_clusters = Table(
+    "news_clusters", metadata,
+    Column("id", String(64), primary_key=True),
+    Column("headline", Text),
+    Column("summary", Text),
+    Column("category", String(40)),
+    Column("source_count", Integer),
+    Column("article_count", Integer),
+    Column("momentum", Float),
+    Column("status", String(12)),
+    Column("first_published_at", String(32)),
+    Column("latest_published_at", String(32)),
+    Column("centroid", Text),          # JSON-encoded list[float]
+    Column("rank_order", Integer),     # 0 = top story
 )
 
 _engine: Engine | None = None
@@ -125,3 +156,98 @@ def load_econ_series(series_id: str) -> list[IndicatorPoint]:
             .order_by(econ_series.c.date)
         ).mappings().all()
     return [IndicatorPoint(date=r["date"], value=r["value"]) for r in rows]
+
+
+@dataclass
+class ClusterRecord:
+    """A clustered story as it is persisted — cluster metadata plus the
+    article rows that belong to it. `articles` is empty for list loads."""
+    id: str
+    headline: str
+    summary: str
+    category: str
+    source_count: int
+    article_count: int
+    momentum: float
+    status: str
+    first_published_at: str
+    latest_published_at: str
+    centroid: list[float]
+    rank_order: int
+    articles: list[Article] = field(default_factory=list)
+
+
+def _cluster_from_row(row, articles: list[Article]) -> ClusterRecord:
+    return ClusterRecord(
+        id=row["id"], headline=row["headline"], summary=row["summary"],
+        category=row["category"], source_count=row["source_count"],
+        article_count=row["article_count"], momentum=row["momentum"],
+        status=row["status"], first_published_at=row["first_published_at"],
+        latest_published_at=row["latest_published_at"],
+        centroid=json.loads(row["centroid"]) if row["centroid"] else [],
+        rank_order=row["rank_order"], articles=articles)
+
+
+def _article_from_row(row) -> Article:
+    return Article(id=row["id"], title=row["title"], summary=row["summary"],
+                   url=row["url"], source=row["source"],
+                   published_at=row["published_at"], category=row["category"],
+                   image_url=row["image_url"])
+
+
+def save_news(clusters: list[ClusterRecord]) -> None:
+    """Replace the entire news snapshot — clusters and their articles."""
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(delete(news_articles))
+        conn.execute(delete(news_clusters))
+        cluster_rows = []
+        article_rows = []
+        for c in clusters:
+            cluster_rows.append({
+                "id": c.id, "headline": c.headline, "summary": c.summary,
+                "category": c.category, "source_count": c.source_count,
+                "article_count": c.article_count, "momentum": c.momentum,
+                "status": c.status,
+                "first_published_at": c.first_published_at,
+                "latest_published_at": c.latest_published_at,
+                "centroid": json.dumps(c.centroid),
+                "rank_order": c.rank_order})
+            for a in c.articles:
+                article_rows.append({
+                    "id": a.id, "cluster_id": c.id, "title": a.title,
+                    "summary": a.summary, "url": a.url, "source": a.source,
+                    "published_at": a.published_at, "category": a.category,
+                    "image_url": a.image_url})
+        if cluster_rows:
+            conn.execute(insert(news_clusters), cluster_rows)
+        if article_rows:
+            conn.execute(insert(news_articles), article_rows)
+
+
+def load_news_clusters() -> list[ClusterRecord]:
+    """All cluster snapshots, ordered by rank (top story first). Articles
+    are not loaded — use `load_news_cluster` for one cluster's articles."""
+    engine = get_engine()
+    with engine.begin() as conn:
+        rows = conn.execute(
+            select(news_clusters).order_by(news_clusters.c.rank_order)
+        ).mappings().all()
+    return [_cluster_from_row(r, []) for r in rows]
+
+
+def load_news_cluster(cluster_id: str) -> ClusterRecord | None:
+    """One cluster snapshot with all of its articles, oldest-first."""
+    engine = get_engine()
+    with engine.begin() as conn:
+        row = conn.execute(
+            select(news_clusters).where(news_clusters.c.id == cluster_id)
+        ).mappings().first()
+        if row is None:
+            return None
+        art_rows = conn.execute(
+            select(news_articles)
+            .where(news_articles.c.cluster_id == cluster_id)
+            .order_by(news_articles.c.published_at)
+        ).mappings().all()
+    return _cluster_from_row(row, [_article_from_row(a) for a in art_rows])

@@ -9,6 +9,8 @@ four-quadrant home, a Finance overview panel (watchlist, breadth, sector
 heatmap, indices), and a per-instrument drill-down with a bespoke candlestick
 chart. News, Politics, and Economics are placeholders pending later phases.
 Phase 2 adds the Economics domain — a FRED-backed indicator overview and an indicator drill-down.
+Phase 3 adds the News domain — an RSS-backed, semantically-clustered story
+overview with a beeswarm momentum field, and a story drill-down.
 
 ## Structure
 

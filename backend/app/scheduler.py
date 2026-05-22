@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.cache import cache
 from app.config import get_settings
-from app.services import economics_service, finance_service
+from app.services import economics_service, finance_service, news_service
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,16 @@ def warm_economics() -> None:
     logger.info("warmed economics:overview + economics:dashboard")
 
 
+def warm_news() -> None:
+    """Run the news ingestion pipeline and recache the overview."""
+    try:
+        news_service.refresh_news()
+        cache.set("news:overview", news_service.build_overview())
+        logger.info("warmed news:overview")
+    except Exception:
+        logger.warning("warm_news failed", exc_info=True)
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     """Start background jobs when SCHEDULER_ENABLED=true; otherwise no-op."""
     global _scheduler
@@ -59,6 +69,8 @@ def start_scheduler() -> BackgroundScheduler | None:
     sched.add_job(warm_markets, "interval", minutes=10, id="warm_markets",
                   max_instances=1, coalesce=True)
     sched.add_job(warm_economics, "interval", hours=6, id="warm_economics",
+                  max_instances=1, coalesce=True)
+    sched.add_job(warm_news, "interval", minutes=15, id="warm_news",
                   max_instances=1, coalesce=True)
     sched.start()
     _scheduler = sched

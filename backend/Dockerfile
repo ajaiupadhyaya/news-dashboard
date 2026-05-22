@@ -16,6 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Application package.
 COPY app ./app
 
+# Pre-download the embedding model into the image so the running
+# container needs no network access for it.
+RUN python -c "from app.services.embeddings import warm_model; warm_model()"
+
 # Fly routes public HTTPS traffic to this internal port.
 EXPOSE 8080
 
