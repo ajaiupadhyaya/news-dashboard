@@ -67,3 +67,27 @@ def test_warm_markets_populates_cache(db, monkeypatch):
                           volume=1, as_of="2026-01-03"))
     scheduler.warm_markets()
     assert cache.get("finance:markets") is not None
+
+
+def test_warm_news_populates_cache(db, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    from app.cache import cache
+    from app.models import Article
+    from app.providers import news_api_provider, rss_provider
+    from app.services import embeddings
+
+    now = datetime.now(timezone.utc)
+    articles = [
+        Article(id=f"a{i}", title=f"Story {i}", summary="summary",
+                url=f"https://ex.com/{i}", source=f"Source {i}",
+                published_at=(now - timedelta(hours=i + 1)).isoformat(),
+                category="general")
+        for i in range(3)
+    ]
+    monkeypatch.setattr(rss_provider, "get_articles", lambda: articles)
+    monkeypatch.setattr(news_api_provider, "get_articles", lambda: [])
+    monkeypatch.setattr(embeddings, "embed",
+                        lambda texts: [[1.0, 0.0], [0.9, 0.1], [0.0, 1.0]])
+    scheduler.warm_news()
+    assert cache.get("news:overview") is not None
