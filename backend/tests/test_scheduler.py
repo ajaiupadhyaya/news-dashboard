@@ -33,3 +33,18 @@ def test_start_scheduler_is_idempotent(monkeypatch):
         assert first is second
     finally:
         scheduler.shutdown_scheduler()
+
+
+def test_warm_economics_populates_cache(db, monkeypatch):
+    from app.cache import cache
+    from app.providers import fred_provider
+    from app.models import IndicatorPoint
+    from app import scheduler
+
+    monkeypatch.setattr(fred_provider, "get_series",
+                        lambda sid, **kw: [IndicatorPoint(
+                            date=f"2026-0{i+1}-01", value=100.0 + i)
+                            for i in range(5)])
+    monkeypatch.setattr(fred_provider, "get_release_calendar", lambda: [])
+    scheduler.warm_economics()
+    assert cache.get("economics:overview") is not None

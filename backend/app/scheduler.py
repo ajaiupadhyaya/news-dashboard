@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.cache import cache
 from app.config import get_settings
-from app.services import finance_service
+from app.services import economics_service, finance_service
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,15 @@ def warm_overview() -> None:
         logger.warning("warm_overview failed", exc_info=True)
 
 
+def warm_economics() -> None:
+    """Recompute the Economics overview and store it in the cache."""
+    try:
+        cache.set("economics:overview", economics_service.build_overview())
+        logger.info("warmed economics:overview")
+    except Exception:
+        logger.warning("warm_economics failed", exc_info=True)
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     """Start background jobs when SCHEDULER_ENABLED=true; otherwise no-op."""
     global _scheduler
@@ -31,6 +40,8 @@ def start_scheduler() -> BackgroundScheduler | None:
         return _scheduler
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(warm_overview, "interval", minutes=10, id="warm_overview",
+                  max_instances=1, coalesce=True)
+    sched.add_job(warm_economics, "interval", hours=6, id="warm_economics",
                   max_instances=1, coalesce=True)
     sched.start()
     _scheduler = sched
