@@ -1,18 +1,59 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useInstrument } from '../finance/hooks';
-import { CandlestickChart } from '../charts/CandlestickChart';
+import { PriceChart } from '../charts/PriceChart';
+import { VolumeChart } from '../charts/VolumeChart';
+import { RSIChart } from '../charts/RSIChart';
+import { MACDChart } from '../charts/MACDChart';
+import {
+  ChartTypeToggle,
+  TimeframeControl,
+} from '../charts/ChartControls';
+import type { ChartType, Timeframe } from '../charts/ChartControls';
 import { FundamentalsGrid } from '../finance/FundamentalsGrid';
 import { StatsRow } from '../finance/StatsRow';
+import { ReturnsTable } from '../finance/ReturnsTable';
 import { AppShell } from '../components/AppShell';
 import { PanelSkeleton } from '../components/PanelSkeleton';
 import { formatUpdated } from '../lib/format';
 import { spring } from '../design/motion';
+import { clsx } from 'clsx';
+
+const SECTION = 'mt-6 font-mono text-xs tracking-widest text-ink-mute uppercase';
+
+function OverlayToggle({
+  label, on, onClick,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={clsx(
+        'rounded-md border px-2 py-0.5 font-mono text-[10px] transition-colors',
+        on
+          ? 'border-accent text-accent'
+          : 'border-border text-ink-mute hover:text-ink',
+      )}
+    >
+      {label}
+    </button>
+  );
+}
 
 export function InstrumentRoute() {
   const { symbol = '' } = useParams();
   const upper = symbol.toUpperCase();
-  const { data, isLoading, isError } = useInstrument(upper);
+  const [range, setRange] = useState<Timeframe>('1y');
+  const [chartType, setChartType] = useState<ChartType>('candle');
+  const [showSma, setShowSma] = useState(true);
+  const [showBollinger, setShowBollinger] = useState(false);
+  const { data, isLoading, isError } = useInstrument(upper, range);
 
   return (
     <AppShell>
@@ -52,33 +93,67 @@ export function InstrumentRoute() {
               <span className="text-sm text-ink-soft">{data.profile.name}</span>
             </header>
 
-            <div
-              className="mt-4 rounded-lg border border-border bg-surface p-4"
-              style={{ viewTransitionName: 'instrument-hero' }}
-            >
-              <CandlestickChart bars={data.bars} technicals={data.technicals} />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <TimeframeControl value={range} onChange={setRange} />
+              <ChartTypeToggle value={chartType} onChange={setChartType} />
+              <OverlayToggle label="SMA" on={showSma}
+                onClick={() => setShowSma((v) => !v)} />
+              <OverlayToggle label="Bollinger" on={showBollinger}
+                onClick={() => setShowBollinger((v) => !v)} />
             </div>
 
-            <h2 className="mt-6 font-mono text-xs tracking-widest text-ink-mute
-                           uppercase">
-              Momentum &amp; Risk
-            </h2>
+            <div
+              className="mt-3 rounded-lg border border-border bg-surface p-4"
+              style={{ viewTransitionName: 'instrument-hero' }}
+            >
+              <PriceChart
+                bars={data.bars}
+                technicals={data.technicals}
+                chartType={chartType}
+                showSma={showSma}
+                showBollinger={showBollinger}
+              />
+            </div>
+
+            <h2 className={SECTION}>Volume</h2>
+            <div className="mt-2 rounded-lg border border-border bg-surface p-3">
+              <VolumeChart bars={data.bars} />
+            </div>
+
+            <h2 className={SECTION}>RSI (14)</h2>
+            <div className="mt-2 rounded-lg border border-border bg-surface p-3">
+              <RSIChart values={data.technicals.rsi ?? []} />
+            </div>
+
+            <h2 className={SECTION}>MACD</h2>
+            <div className="mt-2 rounded-lg border border-border bg-surface p-3">
+              <MACDChart
+                line={data.technicals.macd_line ?? []}
+                signal={data.technicals.macd_signal ?? []}
+                histogram={data.technicals.macd_histogram ?? []}
+              />
+            </div>
+
+            {data.returns && (
+              <>
+                <h2 className={SECTION}>Returns</h2>
+                <div className="mt-2">
+                  <ReturnsTable returns={data.returns} />
+                </div>
+              </>
+            )}
+
+            <h2 className={SECTION}>Momentum &amp; Risk</h2>
             <div className="mt-2">
               <StatsRow stats={data.stats} />
             </div>
 
-            <h2 className="mt-6 font-mono text-xs tracking-widest text-ink-mute
-                           uppercase">
-              Fundamentals
-            </h2>
+            <h2 className={SECTION}>Fundamentals</h2>
             <div className="mt-2">
               <FundamentalsGrid profile={data.profile} />
             </div>
 
-            <h2 className="mt-6 font-mono text-xs tracking-widest text-ink-mute
-                           uppercase">
-              Why this matters
-            </h2>
+            <h2 className={SECTION}>Why this matters</h2>
             <p className="mt-2 rounded-md border border-dashed border-border
                           bg-surface px-3 py-3 text-sm text-ink-mute">
               AI-generated context for this instrument arrives in a later phase.
