@@ -20,6 +20,15 @@ def warm_overview() -> None:
         logger.warning("warm_overview failed", exc_info=True)
 
 
+def warm_markets() -> None:
+    """Recompute the Finance markets page and store it in the cache."""
+    try:
+        cache.set("finance:markets", finance_service.build_markets())
+        logger.info("warmed finance:markets")
+    except Exception:
+        logger.warning("warm_markets failed", exc_info=True)
+
+
 def warm_economics() -> None:
     """Recompute the Economics overview and store it in the cache."""
     try:
@@ -40,6 +49,8 @@ def start_scheduler() -> BackgroundScheduler | None:
         return _scheduler
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(warm_overview, "interval", minutes=10, id="warm_overview",
+                  max_instances=1, coalesce=True)
+    sched.add_job(warm_markets, "interval", minutes=10, id="warm_markets",
                   max_instances=1, coalesce=True)
     sched.add_job(warm_economics, "interval", hours=6, id="warm_economics",
                   max_instances=1, coalesce=True)

@@ -48,3 +48,22 @@ def test_warm_economics_populates_cache(db, monkeypatch):
     monkeypatch.setattr(fred_provider, "get_release_calendar", lambda: [])
     scheduler.warm_economics()
     assert cache.get("economics:overview") is not None
+
+
+def test_warm_markets_populates_cache(db, monkeypatch):
+    from app.cache import cache
+    from app.models import Bar, Quote
+    from app.providers import yfinance_provider
+
+    monkeypatch.setattr(
+        yfinance_provider, "get_history",
+        lambda *a, **k: [Bar(date="2026-01-02", open=1, high=2, low=1,
+                              close=1.5, volume=10),
+                         Bar(date="2026-01-03", open=1, high=2, low=1,
+                             close=1.6, volume=10)])
+    monkeypatch.setattr(
+        yfinance_provider, "get_quote",
+        lambda sym: Quote(symbol=sym, price=1.0, change=0.0, change_pct=0.0,
+                          volume=1, as_of="2026-01-03"))
+    scheduler.warm_markets()
+    assert cache.get("finance:markets") is not None
