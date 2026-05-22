@@ -131,5 +131,6 @@ test('home links into the Finance domain page and drills down', async ({
   // A top mover drills down to its instrument page.
   await page.getByRole('link', { name: /NVDA/ }).click();
   await expect(page).toHaveURL(/\/finance\/NVDA$/);
+  // The instrument stub returns the AAPL fixture for every symbol.
   await expect(page.getByRole('heading', { name: 'AAPL' })).toBeVisible();
 });
