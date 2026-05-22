@@ -12,6 +12,7 @@ class Settings:
     database_url: str | None
     dashboard_token: str | None
     dashboard_password: str | None
+    fred_api_key: str | None
     scheduler_enabled: bool
     log_level: str
     cors_origins: list[str]
@@ -41,6 +42,7 @@ def get_settings() -> Settings:
         database_url=os.getenv("DATABASE_URL") or None,
         dashboard_token=os.getenv("DASHBOARD_TOKEN") or None,
         dashboard_password=os.getenv("DASHBOARD_PASSWORD") or None,
+        fred_api_key=os.getenv("FRED_API_KEY") or None,
         scheduler_enabled=os.getenv("SCHEDULER_ENABLED", "false").strip().lower()
         in ("1", "true", "yes"),
         log_level=os.getenv("LOG_LEVEL", "INFO"),

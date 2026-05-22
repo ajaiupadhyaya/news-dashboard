@@ -35,3 +35,13 @@ def test_invalid_cache_ttl_raises(monkeypatch):
     monkeypatch.setenv("CACHE_TTL_SECONDS", "not-a-number")
     with pytest.raises(ValueError, match="CACHE_TTL_SECONDS"):
         get_settings()
+
+
+def test_fred_api_key_read_from_env(monkeypatch):
+    monkeypatch.setenv("FRED_API_KEY", "test-key-123")
+    assert get_settings().fred_api_key == "test-key-123"
+
+
+def test_fred_api_key_none_when_unset(monkeypatch):
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    assert get_settings().fred_api_key is None
