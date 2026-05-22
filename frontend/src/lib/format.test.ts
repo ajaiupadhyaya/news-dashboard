@@ -1,6 +1,6 @@
 import {
   trendOf, formatPrice, formatPercent, formatChange,
-  formatCompact, formatDay, formatFullDate, formatUpdated,
+  formatCompact, formatDay, formatFullDate, formatUpdated, formatValue,
 } from './format';
 
 test('trendOf classifies signed numbers', () => {
@@ -40,4 +40,10 @@ test('formatUpdated produces an "Updated <time>" label', () => {
   expect(formatUpdated('2026-05-20T20:00:00+00:00')).toMatch(
     /^Updated \d{1,2}:\d{2} (AM|PM)$/,
   );
+});
+
+test('formatValue renders a plain separated number, two decimals', () => {
+  expect(formatValue(5400)).toBe('5,400.00');
+  expect(formatValue(4.3)).toBe('4.30');
+  expect(formatValue(-0.5)).toBe('-0.50');
 });

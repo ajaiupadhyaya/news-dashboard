@@ -156,3 +156,29 @@ export interface IndicatorDetail {
   recession_signals: RecessionSignal[];
   updated_at: string;
 }
+
+/** Finance domain page (markets) — mirrors the backend markets models. */
+
+export interface AssetClass {
+  label: string;        // "Equities" | "Crypto" | "Commodities" | "Rates" | "FX"
+  symbol: string;
+  price: number;
+  change_pct: number;
+  sparkline: number[];
+}
+
+export interface Mover {
+  symbol: string;
+  price: number;
+  change_pct: number;
+}
+
+export interface MarketsResponse {
+  asset_classes: AssetClass[];
+  indices: WatchlistQuote[];
+  gainers: Mover[];
+  losers: Mover[];
+  sectors: SectorChange[];
+  breadth: Breadth;
+  updated_at: string;
+}

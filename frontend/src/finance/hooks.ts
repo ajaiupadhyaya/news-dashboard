@@ -29,6 +29,15 @@ export function useInstrument(symbol: string, range = '1y') {
   });
 }
 
+/** The Finance domain-page markets payload — refetched every 60s. */
+export function useMarkets() {
+  return useQuery({
+    queryKey: ['markets'],
+    queryFn: api.markets,
+    refetchInterval: 60_000,
+  });
+}
+
 /**
  * Add/remove watchlist mutations. The watchlist is part of the overview
  * response, so both invalidate the overview query on success.

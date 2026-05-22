@@ -2,6 +2,7 @@ import type {
   EconomicsOverview,
   IndicatorDetail,
   InstrumentResponse,
+  MarketsResponse,
   OverviewResponse,
 } from './types';
 
@@ -58,6 +59,8 @@ export const api = {
     }),
 
   overview: () => apiFetch<OverviewResponse>('/api/finance/overview'),
+
+  markets: () => apiFetch<MarketsResponse>('/api/finance/markets'),
 
   instrument: (symbol: string, range = '1y') =>
     apiFetch<InstrumentResponse>(

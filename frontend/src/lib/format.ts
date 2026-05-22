@@ -57,3 +57,13 @@ export function formatFullDate(iso: string): string {
 export function formatUpdated(iso: string): string {
   return `Updated ${localTime(new Date(iso))}`;
 }
+
+/** "5,400.00" — a plain number with thousands separators and two decimals.
+ *  For index levels, yields, and other non-currency values where the "$" of
+ *  `formatPrice` would be wrong. */
+export function formatValue(n: number): string {
+  return n.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
