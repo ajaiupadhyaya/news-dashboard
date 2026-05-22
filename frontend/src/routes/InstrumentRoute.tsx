@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useInstrument } from '../finance/hooks';
 import { PriceChart } from '../charts/PriceChart';
@@ -15,6 +15,7 @@ import { FundamentalsGrid } from '../finance/FundamentalsGrid';
 import { StatsRow } from '../finance/StatsRow';
 import { ReturnsTable } from '../finance/ReturnsTable';
 import { AppShell } from '../components/AppShell';
+import { Breadcrumb } from '../components/Breadcrumb';
 import { PanelSkeleton } from '../components/PanelSkeleton';
 import { formatUpdated } from '../lib/format';
 import { spring } from '../design/motion';
@@ -58,14 +59,13 @@ export function InstrumentRoute() {
   return (
     <AppShell>
       <div className="mx-auto w-full max-w-5xl p-4">
-        <Link
-          to="/"
-          viewTransition
-          className="font-mono text-xs text-ink-soft transition-colors
-                     hover:text-accent"
-        >
-          ← Dashboard
-        </Link>
+        <Breadcrumb
+          trail={[
+            { label: 'Dashboard', to: '/' },
+            { label: 'Finance', to: '/finance' },
+            { label: upper },
+          ]}
+        />
 
         {isLoading && (
           <div className="mt-4">
