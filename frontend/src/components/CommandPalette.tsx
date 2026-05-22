@@ -14,6 +14,7 @@ interface Destination {
 /** Fixed destinations the palette can always jump to. */
 const STATIC_DESTINATIONS: Destination[] = [
   { label: 'Dashboard', hint: 'Home', to: '/' },
+  { label: 'Finance Markets', hint: 'Page', to: '/finance' },
   { label: 'Inflation (CPI)', hint: 'Indicator', to: '/economics/CPIAUCSL' },
   { label: 'Unemployment Rate', hint: 'Indicator', to: '/economics/UNRATE' },
   { label: 'Nonfarm Payrolls', hint: 'Indicator', to: '/economics/PAYEMS' },
