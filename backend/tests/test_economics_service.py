@@ -63,3 +63,14 @@ def test_indicator_registry_is_categorized():
     ids = {ind.series_id for ind in es.INDICATORS}
     assert len(ids) == 20                         # no duplicates
     assert set(es.OVERVIEW_IDS).issubset(ids)
+
+
+def test_scale_points_multiplies_raw_values():
+    from app.models import IndicatorPoint
+    from app.services.economics_service import _scale_points
+    pts = [IndicatorPoint(date="2026-01-01", value=220000.0),
+           IndicatorPoint(date="2026-01-08", value=235000.0)]
+    scaled = _scale_points(pts, 0.001)
+    assert [p.value for p in scaled] == [220.0, 235.0]
+    # identity (same object) when scale == 1.0
+    assert _scale_points(pts, 1.0) is pts

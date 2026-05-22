@@ -49,7 +49,7 @@ INDICATORS: list[Indicator] = [
     Indicator("DGS10", "10-Year Treasury", "%", "lin", "Rates"),
     Indicator("DGS2", "2-Year Treasury", "%", "lin", "Rates"),
     Indicator("T10Y2Y", "10y-2y Spread", "%", "lin", "Rates"),
-    # Housing
+    # Housing — HOUST and PERMIT are reported in thousands of units natively.
     Indicator("HOUST", "Housing Starts", "K", "lin", "Housing"),
     Indicator("PERMIT", "Building Permits", "K", "lin", "Housing"),
     Indicator("MORTGAGE30US", "30-Year Mortgage Rate", "%", "lin", "Housing"),
@@ -75,8 +75,8 @@ def _now() -> str:
 
 
 def _effective_scale(ind: Indicator, units: str) -> float:
-    """An indicator's display scale applies only to raw-level data; FRED's
-    pc1/pch/chg transforms already yield ready-to-show numbers."""
+    """An indicator's display scale applies only to raw-level data; any
+    non-lin FRED transform already yields ready-to-show numbers."""
     return ind.scale if units == "lin" else 1.0
 
 
@@ -111,7 +111,10 @@ def build_overview() -> EconomicsOverview:
     """Assemble the Economics overview — the curated home-panel subset."""
     indicators: list[IndicatorSummary] = []
     for series_id in OVERVIEW_IDS:
-        summary = _summarize(_BY_ID[series_id])
+        ind = _BY_ID.get(series_id)
+        if ind is None:
+            continue
+        summary = _summarize(ind)
         if summary is not None:
             indicators.append(summary)
     calendar = provider.get_release_calendar()
