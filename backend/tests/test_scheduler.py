@@ -48,6 +48,7 @@ def test_warm_economics_populates_cache(db, monkeypatch):
     monkeypatch.setattr(fred_provider, "get_release_calendar", lambda: [])
     scheduler.warm_economics()
     assert cache.get("economics:overview") is not None
+    assert cache.get("economics:dashboard") is not None
 
 
 def test_warm_markets_populates_cache(db, monkeypatch):

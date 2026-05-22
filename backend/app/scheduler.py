@@ -30,10 +30,11 @@ def warm_markets() -> None:
 
 
 def warm_economics() -> None:
-    """Recompute the Economics overview and store it in the cache."""
+    """Recompute the Economics overview + dashboard and store them in cache."""
     try:
         cache.set("economics:overview", economics_service.build_overview())
-        logger.info("warmed economics:overview")
+        cache.set("economics:dashboard", economics_service.build_dashboard())
+        logger.info("warmed economics:overview + economics:dashboard")
     except Exception:
         logger.warning("warm_economics failed", exc_info=True)
 
