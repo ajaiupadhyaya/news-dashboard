@@ -14,6 +14,9 @@ vi.mock('../lib/api', () => ({
     }),
     addWatchlist: vi.fn(),
     removeWatchlist: vi.fn(),
+    economicsOverview: vi.fn().mockResolvedValue({
+      indicators: [], calendar: [], updated_at: '2026-05-20T20:00:00+00:00',
+    }),
   },
 }));
 
