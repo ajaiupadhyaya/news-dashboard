@@ -118,6 +118,26 @@ def macd(prices: list[float], fast: int = 12, slow: int = 26,
     return {"macd": macd_line, "signal": signal_line, "histogram": histogram}
 
 
+def bollinger_bands(prices: list[float], period: int = 20,
+                    mult: float = 2.0) -> dict[str, list[float | None]]:
+    """Bollinger Bands aligned to `prices`. The middle band is the SMA;
+    the upper/lower bands are `mult` population standard deviations away.
+    Entries before the window fills are None."""
+    n = len(prices)
+    upper: list[float | None] = [None] * n
+    middle: list[float | None] = [None] * n
+    lower: list[float | None] = [None] * n
+    for i in range(period - 1, n):
+        window = prices[i - period + 1: i + 1]
+        mean = sum(window) / period
+        variance = sum((x - mean) ** 2 for x in window) / period
+        sd = sqrt(variance)
+        middle[i] = round(mean, 4)
+        upper[i] = round(mean + mult * sd, 4)
+        lower[i] = round(mean - mult * sd, 4)
+    return {"upper": upper, "middle": middle, "lower": lower}
+
+
 def breadth(changes: list[float]) -> dict:
     advancers = sum(1 for c in changes if c > 0)
     decliners = sum(1 for c in changes if c < 0)

@@ -88,3 +88,17 @@ def test_macd_short_series_is_all_none():
     m = metrics.macd([1.0, 2.0, 3.0])
     assert m["macd"] == [None, None, None]
     assert m["signal"] == [None, None, None]
+
+
+def test_bollinger_bands_constant_series():
+    bb = metrics.bollinger_bands([5.0] * 30, period=20)
+    assert set(bb.keys()) == {"upper", "middle", "lower"}
+    assert bb["upper"][:19] == [None] * 19      # None until the window fills
+    assert bb["middle"][-1] == 5.0
+    assert bb["upper"][-1] == 5.0               # zero variance -> bands collapse
+    assert bb["lower"][-1] == 5.0
+
+
+def test_bollinger_bands_rising_series_spreads():
+    bb = metrics.bollinger_bands([float(i) for i in range(40)], period=20)
+    assert bb["upper"][-1] > bb["middle"][-1] > bb["lower"][-1]
