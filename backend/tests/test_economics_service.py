@@ -115,3 +115,24 @@ def test_build_indicator_includes_recession_periods(db, monkeypatch):
     detail = economics_service.build_indicator("UNRATE")
     assert len(detail.recession_periods) == 1
     assert detail.recession_periods[0].start == "2020-02-01"
+
+
+def test_build_dashboard_groups_indicators_by_category(db, monkeypatch):
+    monkeypatch.setattr(fred_provider, "get_series",
+                        lambda sid, **kw: _series(30))
+    monkeypatch.setattr(fred_provider, "get_release_calendar", lambda: [])
+    dash = economics_service.build_dashboard()
+    assert [c.name for c in dash.categories] == economics_service.CATEGORY_ORDER
+    total = sum(len(c.indicators) for c in dash.categories)
+    assert total == len(economics_service.INDICATORS)   # all 20 resolved
+    assert len(dash.recession_signals) == 2
+    assert dash.updated_at
+
+
+def test_build_dashboard_skips_failed_series(db, monkeypatch):
+    monkeypatch.setattr(fred_provider, "get_series", lambda sid, **kw: [])
+    monkeypatch.setattr(fred_provider, "get_release_calendar", lambda: [])
+    dash = economics_service.build_dashboard()
+    # Still all six categories present, each empty — never a blank page.
+    assert [c.name for c in dash.categories] == economics_service.CATEGORY_ORDER
+    assert all(c.indicators == [] for c in dash.categories)

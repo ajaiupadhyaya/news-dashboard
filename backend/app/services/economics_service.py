@@ -152,6 +152,23 @@ def _recession_signals() -> list[RecessionSignal]:
     return signals
 
 
+def build_dashboard() -> EconomicsDashboard:
+    """Assemble the Economics domain page: every indicator grouped by
+    category, the recession signals, and the release calendar."""
+    by_category: dict[str, list[IndicatorSummary]] = {}
+    for ind in INDICATORS:
+        summary = _summarize(ind)
+        if summary is not None:
+            by_category.setdefault(ind.category, []).append(summary)
+    categories = [
+        IndicatorCategory(name=cat, indicators=by_category.get(cat, []))
+        for cat in CATEGORY_ORDER
+    ]
+    return EconomicsDashboard(
+        categories=categories, recession_signals=_recession_signals(),
+        calendar=provider.get_release_calendar(), updated_at=_now())
+
+
 def build_indicator(series_id: str, transform: str | None = None,
                     range_: str = "max") -> IndicatorDetail | None:
     """Assemble the drill-down for one indicator. None if unknown/no data.
