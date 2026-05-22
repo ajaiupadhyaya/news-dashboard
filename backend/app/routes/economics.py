@@ -14,11 +14,23 @@ def overview():
                                 economics_service.build_overview)
 
 
+@router.get("/dashboard")
+def dashboard():
+    """The Economics domain page: categorized indicators + recession + calendar."""
+    return cache.get_or_compute("economics:dashboard",
+                                economics_service.build_dashboard)
+
+
 @router.get("/indicator/{series_id}")
-def indicator(series_id: str):
-    key = f"economics:indicator:{series_id.strip().upper()}"
+def indicator(series_id: str, transform: str | None = None,
+              range: str = "max"):
+    """`transform` selects the FRED units (lin/pc1/pch); `range` the
+    timeframe (1y/5y/10y/max)."""
+    sid = series_id.strip().upper()
+    key = f"economics:indicator:{sid}:{transform}:{range}"
     result = cache.get_or_compute(
-        key, lambda: economics_service.build_indicator(series_id))
+        key, lambda: economics_service.build_indicator(
+            series_id, transform=transform, range_=range))
     if result is None:
         raise HTTPException(status_code=404,
                             detail=f"No data for {series_id}")
