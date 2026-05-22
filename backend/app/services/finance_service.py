@@ -40,6 +40,16 @@ MOVERS_UNIVERSE = [
     "DIS", "WFC", "INTC",
 ]
 
+# Timeframe range -> (yfinance period, interval). Daily interval only.
+_RANGE_MAP = {
+    "1mo": ("1mo", "1d"),
+    "3mo": ("3mo", "1d"),
+    "6mo": ("6mo", "1d"),
+    "1y": ("1y", "1d"),
+    "5y": ("5y", "1d"),
+    "max": ("max", "1d"),
+}
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -84,10 +94,14 @@ def build_overview() -> OverviewResponse:
                             sectors=sectors, breadth=breadth, updated_at=_now())
 
 
-def build_instrument(symbol: str) -> InstrumentResponse | None:
-    """Assemble the drill-down for one instrument: bars, technicals, profile."""
+def build_instrument(symbol: str,
+                     range_: str = "1y") -> InstrumentResponse | None:
+    """Assemble the drill-down for one instrument over the given timeframe
+    range: bars, technicals (SMA/RSI/MACD/Bollinger/volume), stats,
+    returns, and the fundamentals profile. None when there is no data."""
     symbol = symbol.strip().upper()
-    bars = provider.get_history(symbol, period="2y", interval="1d")
+    period, interval = _RANGE_MAP.get(range_, ("1y", "1d"))
+    bars = provider.get_history(symbol, period=period, interval=interval)
     if not bars:
         return None
     try:
@@ -99,10 +113,22 @@ def build_instrument(symbol: str) -> InstrumentResponse | None:
     closes = [b.close for b in bars]
     profile = (provider.get_fundamentals(symbol)
                or Fundamentals(symbol=symbol, name=symbol))
+
+    macd_data = metrics.macd(closes)
+    bb = metrics.bollinger_bands(closes)
     technicals = Technicals(
         sma_20=metrics.sma(closes, 20),
         sma_50=metrics.sma(closes, 50),
-        sma_200=metrics.sma(closes, 200))
+        sma_200=metrics.sma(closes, 200),
+        rsi=metrics.rsi(closes),
+        macd_line=macd_data["macd"],
+        macd_signal=macd_data["signal"],
+        macd_histogram=macd_data["histogram"],
+        bb_upper=bb["upper"],
+        bb_middle=bb["middle"],
+        bb_lower=bb["lower"],
+        volume=[b.volume for b in bars])
+
     recent = bars[-252:]
     stats = InstrumentStats(
         momentum_1m=round(metrics.momentum(closes, 21) * 100, 4),
@@ -113,10 +139,11 @@ def build_instrument(symbol: str) -> InstrumentResponse | None:
                 metrics.simple_returns(closes[-31:])) * 100, 4),
         week52_high=max(b.high for b in recent),
         week52_low=min(b.low for b in recent))
+    returns = Returns(**metrics.period_returns(bars))
 
     return InstrumentResponse(symbol=symbol, profile=profile, bars=bars,
                               technicals=technicals, stats=stats,
-                              updated_at=_now())
+                              returns=returns, updated_at=_now())
 
 
 def build_markets() -> MarketsResponse:

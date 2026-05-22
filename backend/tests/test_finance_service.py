@@ -89,3 +89,32 @@ def test_build_markets_skips_failed_symbols(db, monkeypatch):
     assert markets.asset_classes == []
     assert markets.gainers == []
     assert markets.updated_at
+
+
+def test_build_instrument_includes_rich_technicals_and_returns(db, monkeypatch):
+    closes = [100.0 + i for i in range(60)]
+    monkeypatch.setattr(yfinance_provider, "get_history",
+                        lambda *a, **k: _bars(closes))
+    monkeypatch.setattr(yfinance_provider, "get_fundamentals",
+                        lambda sym: Fundamentals(symbol=sym, name="Test Co"))
+    result = finance_service.build_instrument("AAPL", "1y")
+    assert result is not None
+    assert len(result.technicals.rsi) == 60
+    assert len(result.technicals.volume) == 60
+    assert len(result.technicals.macd_line) == 60
+    assert result.technicals.bb_middle[-1] is not None
+    assert result.returns is not None
+
+
+def test_build_instrument_range_maps_to_period(db, monkeypatch):
+    seen = {}
+
+    def _capture(symbol, period="1y", interval="1d"):
+        seen["period"], seen["interval"] = period, interval
+        return _bars([100.0 + i for i in range(30)])
+
+    monkeypatch.setattr(yfinance_provider, "get_history", _capture)
+    monkeypatch.setattr(yfinance_provider, "get_fundamentals",
+                        lambda sym: None)
+    finance_service.build_instrument("AAPL", "5y")
+    assert seen == {"period": "5y", "interval": "1d"}
