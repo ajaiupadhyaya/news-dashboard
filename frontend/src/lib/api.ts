@@ -1,4 +1,6 @@
 import type {
+  EconomicsOverview,
+  IndicatorDetail,
   InstrumentResponse,
   OverviewResponse,
 } from './types';
@@ -72,5 +74,13 @@ export const api = {
     apiFetch<{ symbols: string[] }>(
       `/api/watchlist/${encodeURIComponent(symbol)}`,
       { method: 'DELETE' },
+    ),
+
+  economicsOverview: () =>
+    apiFetch<EconomicsOverview>('/api/economics/overview'),
+
+  indicator: (seriesId: string) =>
+    apiFetch<IndicatorDetail>(
+      `/api/economics/indicator/${encodeURIComponent(seriesId)}`,
     ),
 };

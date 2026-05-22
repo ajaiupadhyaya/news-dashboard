@@ -80,3 +80,58 @@ export interface InstrumentResponse {
   stats: InstrumentStats;
   updated_at: string;
 }
+
+/** Economics domain (Phase 2) — mirrors the backend economics models. */
+
+export interface IndicatorPoint {
+  date: string;
+  value: number;
+}
+
+export interface ReleaseEvent {
+  date: string;
+  release_name: string;
+}
+
+export type TrendMarker = 'below' | 'in' | 'above';
+
+export interface IndicatorSummary {
+  series_id: string;
+  name: string;
+  unit: string;
+  latest: number;
+  latest_date: string;
+  change: number;
+  trend: TrendMarker;
+  sparkline: number[];
+}
+
+export interface EconomicsOverview {
+  indicators: IndicatorSummary[];
+  calendar: ReleaseEvent[];
+  updated_at: string;
+}
+
+export type SignalStatus = 'normal' | 'warning' | 'alert';
+
+export interface RecessionSignal {
+  name: string;
+  value: number;
+  status: SignalStatus;
+  detail: string;
+}
+
+export interface IndicatorDetail {
+  series_id: string;
+  name: string;
+  unit: string;
+  series: IndicatorPoint[];
+  latest: number;
+  change: number;
+  yoy: number | null;
+  range_low: number;
+  range_high: number;
+  momentum: number;
+  recession_signals: RecessionSignal[];
+  updated_at: string;
+}
