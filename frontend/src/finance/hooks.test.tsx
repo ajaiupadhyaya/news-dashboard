@@ -34,3 +34,20 @@ test('useInstrument stays idle for an empty symbol', () => {
   });
   expect(result.current.fetchStatus).toBe('idle');
 });
+
+test('useInstrument passes the range through to the API', async () => {
+  const { renderHook, waitFor } = await import('@testing-library/react');
+  const { QueryWrapper } = await import('../test/utils');
+  const { useInstrument } = await import('./hooks');
+  const { api } = await import('../lib/api');
+
+  const spy = vi
+    .spyOn(api, 'instrument')
+    .mockResolvedValue({ symbol: 'AAPL' } as never);
+  const { result } = renderHook(() => useInstrument('AAPL', '5y'), {
+    wrapper: QueryWrapper,
+  });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(spy).toHaveBeenCalledWith('AAPL', '5y');
+  spy.mockRestore();
+});

@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '../lib/api';
 
 /** The Finance overview — refetched every 60s to stay live. */
@@ -10,12 +15,17 @@ export function useOverview() {
   });
 }
 
-/** A single instrument's drill-down data. Disabled for an empty symbol. */
-export function useInstrument(symbol: string) {
+/**
+ * A single instrument's drill-down data for a timeframe range. Disabled for
+ * an empty symbol. Keeps the previous data while a new range loads, so
+ * switching timeframes does not flash the page.
+ */
+export function useInstrument(symbol: string, range = '1y') {
   return useQuery({
-    queryKey: ['instrument', symbol],
-    queryFn: () => api.instrument(symbol),
+    queryKey: ['instrument', symbol, range],
+    queryFn: () => api.instrument(symbol, range),
     enabled: symbol.length > 0,
+    placeholderData: keepPreviousData,
   });
 }
 
