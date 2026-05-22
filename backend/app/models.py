@@ -80,3 +80,52 @@ class InstrumentResponse(BaseModel):
     technicals: Technicals
     stats: InstrumentStats
     updated_at: str
+
+
+class IndicatorPoint(BaseModel):
+    date: str          # ISO date, e.g. "2026-04-01"
+    value: float
+
+
+class ReleaseEvent(BaseModel):
+    date: str          # ISO date of the release
+    release_name: str
+
+
+class IndicatorSummary(BaseModel):
+    series_id: str
+    name: str
+    unit: str          # display unit: "%", "K", "index", "$"
+    latest: float      # headline value
+    latest_date: str
+    change: float      # change vs. the prior observation, headline units
+    trend: str         # trend-relative marker: "below" | "in" | "above"
+    sparkline: list[float]
+
+
+class EconomicsOverview(BaseModel):
+    indicators: list[IndicatorSummary]
+    calendar: list[ReleaseEvent]
+    updated_at: str
+
+
+class RecessionSignal(BaseModel):
+    name: str
+    value: float
+    status: str        # "normal" | "warning" | "alert"
+    detail: str        # plain-language one-liner
+
+
+class IndicatorDetail(BaseModel):
+    series_id: str
+    name: str
+    unit: str
+    series: list[IndicatorPoint]
+    latest: float
+    change: float
+    yoy: float | None = None       # year-over-year %, None when N/A
+    range_low: float
+    range_high: float
+    momentum: float                # momentum/trend composite score
+    recession_signals: list[RecessionSignal]
+    updated_at: str

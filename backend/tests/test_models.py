@@ -48,3 +48,36 @@ def test_instrument_response_assembles():
         updated_at="2026-01-02T00:00:00Z",
     )
     assert resp.symbol == "AAPL"
+
+
+def test_economics_overview_model_roundtrips():
+    from app.models import (EconomicsOverview, IndicatorPoint,
+                            IndicatorSummary, ReleaseEvent)
+    ov = EconomicsOverview(
+        indicators=[IndicatorSummary(
+            series_id="UNRATE", name="Unemployment Rate", unit="%",
+            latest=4.1, latest_date="2026-04-01", change=-0.1,
+            trend="in", sparkline=[4.3, 4.2, 4.1])],
+        calendar=[ReleaseEvent(date="2026-05-13",
+                               release_name="Consumer Price Index")],
+        updated_at="2026-05-21T00:00:00+00:00")
+    assert ov.indicators[0].series_id == "UNRATE"
+    assert ov.calendar[0].release_name == "Consumer Price Index"
+    pt = IndicatorPoint(date="2026-04-01", value=4.1)
+    assert pt.value == 4.1
+
+
+def test_indicator_detail_model():
+    from app.models import (IndicatorDetail, IndicatorPoint, RecessionSignal)
+    detail = IndicatorDetail(
+        series_id="UNRATE", name="Unemployment Rate", unit="%",
+        series=[IndicatorPoint(date="2026-03-01", value=4.2),
+                IndicatorPoint(date="2026-04-01", value=4.1)],
+        latest=4.1, change=-0.1, yoy=0.3, range_low=3.4, range_high=4.3,
+        momentum=-2.4,
+        recession_signals=[RecessionSignal(
+            name="Yield curve (10y-2y)", value=-0.15, status="alert",
+            detail="Inverted — historically a recession precursor.")],
+        updated_at="2026-05-21T00:00:00+00:00")
+    assert detail.yoy == 0.3
+    assert detail.recession_signals[0].status == "alert"
