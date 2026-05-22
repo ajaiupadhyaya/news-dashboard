@@ -15,6 +15,7 @@ export function FinancePanel() {
     <Panel
       title="Finance"
       icon="💹"
+      href="/finance"
       action={
         data ? (
           <span className="font-mono text-[10px] text-ink-mute">
