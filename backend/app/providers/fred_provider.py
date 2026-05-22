@@ -3,7 +3,8 @@ import logging
 import httpx
 
 from app.config import get_settings
-from app.models import IndicatorPoint, ReleaseEvent
+from app.models import IndicatorPoint, RecessionPeriod, ReleaseEvent
+from app.analysis.econ_metrics import recession_intervals
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +68,11 @@ def get_release_calendar(limit: int = 60) -> list[ReleaseEvent]:
         except KeyError:
             continue
     return events
+
+
+def get_recession_periods() -> list[RecessionPeriod]:
+    """NBER recession intervals derived from the FRED USREC series (a
+    monthly 0/1 recession flag). [] on any failure."""
+    points = get_series("USREC")
+    return [RecessionPeriod(start=start, end=end)
+            for start, end in recession_intervals(points)]

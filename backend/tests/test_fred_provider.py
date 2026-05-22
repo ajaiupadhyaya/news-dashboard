@@ -62,3 +62,21 @@ def test_get_release_calendar_parses_dates(monkeypatch):
     cal = fred_provider.get_release_calendar()
     assert cal[0].release_name == "Consumer Price Index"
     assert cal[1].date == "2026-05-02"
+
+
+def test_get_recession_periods_derives_intervals(monkeypatch):
+    from app.models import IndicatorPoint
+    monkeypatch.setattr(fred_provider, "get_series", lambda sid, **kw: [
+        IndicatorPoint(date="2020-01-01", value=0),
+        IndicatorPoint(date="2020-02-01", value=1),
+        IndicatorPoint(date="2020-03-01", value=0),
+    ])
+    periods = fred_provider.get_recession_periods()
+    assert len(periods) == 1
+    assert periods[0].start == "2020-02-01"
+    assert periods[0].end == "2020-03-01"
+
+
+def test_get_recession_periods_empty_on_failure(monkeypatch):
+    monkeypatch.setattr(fred_provider, "get_series", lambda sid, **kw: [])
+    assert fred_provider.get_recession_periods() == []
