@@ -81,3 +81,41 @@ def test_indicator_detail_model():
         updated_at="2026-05-21T00:00:00+00:00")
     assert detail.yoy == 0.3
     assert detail.recession_signals[0].status == "alert"
+
+
+def test_technicals_new_fields_default_empty():
+    from app.models import Technicals
+    t = Technicals(sma_20=[1.0], sma_50=[None], sma_200=[None])
+    assert t.rsi == []
+    assert t.macd_line == []
+    assert t.bb_upper == []
+    assert t.volume == []
+
+
+def test_returns_model():
+    from app.models import Returns
+    r = Returns(week_1=1.5, ytd=3.0)
+    assert r.week_1 == 1.5
+    assert r.ytd == 3.0
+    assert r.year_3 is None
+
+
+def test_markets_response_model():
+    from app.models import (AssetClass, Breadth, MarketsResponse, Mover,
+                            SectorChange, WatchlistQuote)
+    markets = MarketsResponse(
+        asset_classes=[AssetClass(label="Crypto", symbol="BTC-USD",
+                                  price=1.0, change_pct=2.0,
+                                  sparkline=[1.0, 2.0])],
+        indices=[WatchlistQuote(symbol="^GSPC", price=1.0, change=0.1,
+                                change_pct=1.0, volume=1,
+                                as_of="2026-01-02", sparkline=[1.0])],
+        gainers=[Mover(symbol="AAA", price=2.0, change_pct=9.0)],
+        losers=[Mover(symbol="BBB", price=2.0, change_pct=-9.0)],
+        sectors=[SectorChange(symbol="XLK", name="Tech", change_pct=1.0)],
+        breadth=Breadth(advancers=1, decliners=1, unchanged=0,
+                        advance_decline_ratio=1.0),
+        updated_at="2026-01-02T00:00:00Z")
+    assert markets.asset_classes[0].label == "Crypto"
+    assert markets.gainers[0].change_pct == 9.0
+    assert markets.losers[0].symbol == "BBB"

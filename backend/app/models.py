@@ -62,6 +62,15 @@ class Technicals(BaseModel):
     sma_20: list[float | None]
     sma_50: list[float | None]
     sma_200: list[float | None]
+    # Enrichment fields — default empty so existing constructions stay valid.
+    rsi: list[float | None] = []
+    macd_line: list[float | None] = []
+    macd_signal: list[float | None] = []
+    macd_histogram: list[float | None] = []
+    bb_upper: list[float | None] = []
+    bb_middle: list[float | None] = []
+    bb_lower: list[float | None] = []
+    volume: list[int] = []
 
 
 class InstrumentStats(BaseModel):
@@ -73,12 +82,23 @@ class InstrumentStats(BaseModel):
     week52_low: float | None = None
 
 
+class Returns(BaseModel):
+    week_1: float | None = None
+    month_1: float | None = None
+    month_3: float | None = None
+    month_6: float | None = None
+    ytd: float | None = None
+    year_1: float | None = None
+    year_3: float | None = None
+
+
 class InstrumentResponse(BaseModel):
     symbol: str
     profile: Fundamentals
     bars: list[Bar]
     technicals: Technicals
     stats: InstrumentStats
+    returns: Returns = Returns()
     updated_at: str
 
 
@@ -128,4 +148,28 @@ class IndicatorDetail(BaseModel):
     range_high: float
     momentum: float                # momentum/trend composite score
     recession_signals: list[RecessionSignal]
+    updated_at: str
+
+
+class AssetClass(BaseModel):
+    label: str          # "Equities", "Crypto", "Commodities", "Rates", "FX"
+    symbol: str
+    price: float
+    change_pct: float
+    sparkline: list[float]
+
+
+class Mover(BaseModel):
+    symbol: str
+    price: float
+    change_pct: float
+
+
+class MarketsResponse(BaseModel):
+    asset_classes: list[AssetClass]
+    indices: list[WatchlistQuote]
+    gainers: list[Mover]
+    losers: list[Mover]
+    sectors: list[SectorChange]
+    breadth: Breadth
     updated_at: str
