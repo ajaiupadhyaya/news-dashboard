@@ -1,6 +1,8 @@
 import statistics
 from math import sqrt
 
+from app.models import Bar
+
 
 def simple_returns(prices: list[float]) -> list[float]:
     out: list[float] = []
@@ -149,3 +151,32 @@ def breadth(changes: list[float]) -> dict:
         "unchanged": unchanged,
         "advance_decline_ratio": round(ratio, 4),
     }
+
+
+def period_returns(bars: list[Bar]) -> dict[str, float | None]:
+    """Total percent return over standard lookbacks, plus year-to-date.
+
+    Lookbacks are in trading days (≈ 5/21/63/126/252/756). A return is
+    None when there is not enough history. Keys match the `Returns` model.
+    """
+    closes = [b.close for b in bars]
+    n = len(closes)
+    latest = closes[-1] if closes else None
+
+    def _ret(lookback: int) -> float | None:
+        if latest is None or n <= lookback:
+            return None
+        base = closes[-lookback - 1]
+        return round((latest / base - 1.0) * 100.0, 4) if base else None
+
+    result: dict[str, float | None] = {
+        "week_1": _ret(5), "month_1": _ret(21), "month_3": _ret(63),
+        "month_6": _ret(126), "year_1": _ret(252), "year_3": _ret(756),
+        "ytd": None,
+    }
+    if bars and latest is not None:
+        year = bars[-1].date[:4]
+        base = next((b.close for b in bars if b.date[:4] == year), None)
+        if base:
+            result["ytd"] = round((latest / base - 1.0) * 100.0, 4)
+    return result

@@ -102,3 +102,27 @@ def test_bollinger_bands_constant_series():
 def test_bollinger_bands_rising_series_spreads():
     bb = metrics.bollinger_bands([float(i) for i in range(40)], period=20)
     assert bb["upper"][-1] > bb["middle"][-1] > bb["lower"][-1]
+
+
+def test_period_returns():
+    from app.models import Bar
+
+    # 260 daily bars, all 2026, every close 100.0 except the last at 110.0.
+    bars = [
+        Bar(date=f"2026-{i // 28 % 12 + 1:02d}-{i % 28 + 1:02d}",
+            open=100.0, high=100.0, low=100.0, close=100.0, volume=1)
+        for i in range(259)
+    ]
+    bars.append(Bar(date="2026-12-28", open=110.0, high=110.0, low=110.0,
+                    close=110.0, volume=1))
+    r = metrics.period_returns(bars)
+    assert r["week_1"] == 10.0           # 110 / 100 - 1
+    assert r["month_1"] == 10.0
+    assert r["year_1"] == 10.0
+    assert r["year_3"] is None           # only 260 bars, < 756
+    assert r["ytd"] == 10.0
+
+
+def test_period_returns_empty():
+    r = metrics.period_returns([])
+    assert all(v is None for v in r.values())
