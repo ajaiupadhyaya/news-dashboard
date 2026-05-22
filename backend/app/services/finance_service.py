@@ -4,9 +4,10 @@ from datetime import datetime, timezone
 from app.analysis import metrics
 from app.config import get_settings
 from app.database import save_ohlcv
-from app.models import (Breadth, Fundamentals, InstrumentResponse,
-                        InstrumentStats, OverviewResponse, SectorChange,
-                        Technicals, WatchlistQuote)
+from app.models import (AssetClass, Breadth, Fundamentals, InstrumentResponse,
+                        InstrumentStats, MarketsResponse, Mover,
+                        OverviewResponse, Returns, SectorChange, Technicals,
+                        WatchlistQuote)
 from app.providers import yfinance_provider as provider
 from app.store import get_watchlist
 
@@ -20,6 +21,24 @@ SECTORS = [("XLK", "Technology"), ("XLF", "Financials"), ("XLE", "Energy"),
            ("XLP", "Consumer Staples"), ("XLI", "Industrials"),
            ("XLB", "Materials"), ("XLU", "Utilities"),
            ("XLRE", "Real Estate"), ("XLC", "Communication Services")]
+
+# Representative ticker for each asset-class tile on the Finance domain page.
+ASSET_CLASSES = [
+    ("Equities", "^GSPC"),
+    ("Crypto", "BTC-USD"),
+    ("Commodities", "GC=F"),
+    ("Rates", "^TNX"),
+    ("FX", "DX-Y.NYB"),
+]
+
+# Large-cap universe screened for the day's top movers.
+MOVERS_UNIVERSE = [
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "TSLA",
+    "BRK-B", "LLY", "JPM", "V", "XOM", "UNH", "MA", "COST", "HD", "PG",
+    "JNJ", "ABBV", "NFLX", "BAC", "KO", "CRM", "CVX", "MRK", "AMD", "PEP",
+    "WMT", "ADBE", "ORCL", "TMO", "ACN", "MCD", "CSCO", "ABT", "QCOM",
+    "DIS", "WFC", "INTC",
+]
 
 
 def _now() -> str:
@@ -98,3 +117,59 @@ def build_instrument(symbol: str) -> InstrumentResponse | None:
     return InstrumentResponse(symbol=symbol, profile=profile, bars=bars,
                               technicals=technicals, stats=stats,
                               updated_at=_now())
+
+
+def build_markets() -> MarketsResponse:
+    """Assemble the Finance domain page: asset classes, indices, movers,
+    sectors, breadth. Per-symbol isolation — a failed fetch is skipped."""
+    asset_classes: list[AssetClass] = []
+    for label, sym in ASSET_CLASSES:
+        bars = provider.get_history(sym, period="1mo", interval="1d")
+        if len(bars) < 2:
+            continue
+        last, prev = bars[-1], bars[-2]
+        change_pct = (round((last.close - prev.close) / prev.close * 100, 4)
+                      if prev.close else 0.0)
+        asset_classes.append(AssetClass(
+            label=label, symbol=sym, price=last.close, change_pct=change_pct,
+            sparkline=metrics.downsample([b.close for b in bars], 24)))
+
+    indices: list[WatchlistQuote] = []
+    for sym, _ in INDICES:
+        bars = provider.get_history(sym, period="1mo", interval="1d")
+        if len(bars) < 2:
+            continue
+        last, prev = bars[-1], bars[-2]
+        change = round(last.close - prev.close, 4)
+        change_pct = (round(change / prev.close * 100, 4)
+                      if prev.close else 0.0)
+        indices.append(WatchlistQuote(
+            symbol=sym, price=last.close, change=change,
+            change_pct=change_pct, volume=last.volume, as_of=last.date,
+            sparkline=metrics.downsample([b.close for b in bars], 24)))
+
+    movers: list[Mover] = []
+    for sym in MOVERS_UNIVERSE:
+        quote = provider.get_quote(sym)
+        if quote:
+            movers.append(Mover(symbol=quote.symbol, price=quote.price,
+                                change_pct=quote.change_pct))
+    gainers = sorted(movers, key=lambda m: m.change_pct, reverse=True)[:5]
+    losers = sorted(movers, key=lambda m: m.change_pct)[:5]
+
+    sectors: list[SectorChange] = []
+    for sym, name in SECTORS:
+        quote = provider.get_quote(sym)
+        if quote:
+            sectors.append(SectorChange(symbol=sym, name=name,
+                                        change_pct=quote.change_pct))
+
+    all_changes = ([a.change_pct for a in asset_classes]
+                   + [i.change_pct for i in indices]
+                   + [m.change_pct for m in movers]
+                   + [s.change_pct for s in sectors])
+    breadth = Breadth(**metrics.breadth(all_changes))
+
+    return MarketsResponse(asset_classes=asset_classes, indices=indices,
+                           gainers=gainers, losers=losers, sectors=sectors,
+                           breadth=breadth, updated_at=_now())

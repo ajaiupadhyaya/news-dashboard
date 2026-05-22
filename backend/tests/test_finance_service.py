@@ -61,3 +61,31 @@ def test_build_instrument_survives_save_failure(db, monkeypatch):
     result = finance_service.build_instrument("AAPL")
     assert result is not None
     assert result.symbol == "AAPL"
+
+
+def test_build_markets_assembles(db, monkeypatch):
+    from app.models import Quote
+
+    monkeypatch.setattr(yfinance_provider, "get_history",
+                        lambda *a, **k: _bars([100.0, 101.0, 102.0]))
+    monkeypatch.setattr(yfinance_provider, "get_quote",
+                        lambda sym: Quote(symbol=sym, price=10.0, change=0.5,
+                                          change_pct=5.0, volume=1,
+                                          as_of="2026-01-03"))
+    markets = finance_service.build_markets()
+    assert len(markets.asset_classes) == len(finance_service.ASSET_CLASSES)
+    assert len(markets.indices) == len(finance_service.INDICES)
+    assert len(markets.gainers) == 5
+    assert len(markets.losers) == 5
+    assert markets.asset_classes[0].sparkline          # non-empty
+    assert markets.updated_at
+
+
+def test_build_markets_skips_failed_symbols(db, monkeypatch):
+    # Every fetch fails -> empty-but-valid payload (per-symbol isolation).
+    monkeypatch.setattr(yfinance_provider, "get_history", lambda *a, **k: [])
+    monkeypatch.setattr(yfinance_provider, "get_quote", lambda sym: None)
+    markets = finance_service.build_markets()
+    assert markets.asset_classes == []
+    assert markets.gainers == []
+    assert markets.updated_at
