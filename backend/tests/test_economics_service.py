@@ -74,3 +74,44 @@ def test_scale_points_multiplies_raw_values():
     assert [p.value for p in scaled] == [220.0, 235.0]
     # identity (same object) when scale == 1.0
     assert _scale_points(pts, 1.0) is pts
+
+
+def test_build_indicator_applies_transform(db, monkeypatch):
+    seen = {}
+
+    def fake_get_series(sid, units="lin", observation_start=None):
+        seen[sid] = units
+        return _series(40)
+
+    monkeypatch.setattr(fred_provider, "get_series", fake_get_series)
+    monkeypatch.setattr(fred_provider, "get_recession_periods", lambda: [])
+    detail = economics_service.build_indicator("UNRATE", transform="pc1")
+    assert seen["UNRATE"] == "pc1"
+    assert detail.unit == "%"        # pc1 always yields a percentage
+
+
+def test_build_indicator_range_sets_observation_start(db, monkeypatch):
+    seen = {}
+
+    def fake_get_series(sid, units="lin", observation_start=None):
+        seen[sid] = observation_start
+        return _series(40)
+
+    monkeypatch.setattr(fred_provider, "get_series", fake_get_series)
+    monkeypatch.setattr(fred_provider, "get_recession_periods", lambda: [])
+    economics_service.build_indicator("UNRATE", range_="5y")
+    assert seen["UNRATE"] is not None        # a bounded window was requested
+    economics_service.build_indicator("UNRATE", range_="max")
+    assert seen["UNRATE"] is None            # max = full history
+
+
+def test_build_indicator_includes_recession_periods(db, monkeypatch):
+    from app.models import RecessionPeriod
+    monkeypatch.setattr(fred_provider, "get_series",
+                        lambda sid, **kw: _series(40))
+    monkeypatch.setattr(
+        fred_provider, "get_recession_periods",
+        lambda: [RecessionPeriod(start="2020-02-01", end="2020-04-01")])
+    detail = economics_service.build_indicator("UNRATE")
+    assert len(detail.recession_periods) == 1
+    assert detail.recession_periods[0].start == "2020-02-01"

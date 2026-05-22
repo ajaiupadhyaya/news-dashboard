@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.analysis import econ_metrics as em
 from app.analysis import metrics
@@ -65,6 +65,13 @@ OVERVIEW_IDS = ["CPIAUCSL", "UNRATE", "PAYEMS", "A191RL1Q225SBEA",
 
 _BY_ID = {ind.series_id: ind for ind in INDICATORS}
 
+# Drill-down timeframe range -> years of history (None = full series).
+_RANGE_YEARS: dict[str, int | None] = {
+    "1y": 1, "5y": 5, "10y": 10, "max": None,
+}
+# FRED transforms exposed by the drill-down toggle (Level / YoY % / MoM %).
+_TRANSFORMS = {"lin", "pc1", "pch"}
+
 # Recession-signal series (used by every indicator drill-down).
 _YIELD_CURVE = "T10Y2Y"
 _SAHM = "SAHMREALTIME"
@@ -72,6 +79,14 @@ _SAHM = "SAHMREALTIME"
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _observation_start(range_: str) -> str | None:
+    """ISO start date for a drill-down range, or None for the full series."""
+    years = _RANGE_YEARS.get(range_)
+    if years is None:
+        return None
+    return (date.today() - timedelta(days=365 * years)).isoformat()
 
 
 def _effective_scale(ind: Indicator, units: str) -> float:
@@ -137,20 +152,32 @@ def _recession_signals() -> list[RecessionSignal]:
     return signals
 
 
-def build_indicator(series_id: str) -> IndicatorDetail | None:
-    """Assemble the drill-down for one indicator. None if unknown/no data."""
+def build_indicator(series_id: str, transform: str | None = None,
+                    range_: str = "max") -> IndicatorDetail | None:
+    """Assemble the drill-down for one indicator. None if unknown/no data.
+
+    `transform` overrides the FRED units ("lin"/"pc1"/"pch"); when omitted
+    the indicator's native default is used. `range_` bounds the timeframe
+    ("1y"/"5y"/"10y"/"max").
+    """
     series_id = series_id.strip().upper()
     ind = _BY_ID.get(series_id)
     if ind is None:
         return None
-    points = provider.get_series(series_id, units=ind.fred_units)
+    units = transform if transform in _TRANSFORMS else ind.fred_units
+    points = provider.get_series(
+        series_id, units=units, observation_start=_observation_start(range_))
     if len(points) < 2:
         return None
-    points = _scale_points(points, _effective_scale(ind, ind.fred_units))
+    points = _scale_points(points, _effective_scale(ind, units))
     values = [p.value for p in points]
+    # pc1/pch always yield percentages; otherwise the indicator's own unit.
+    unit = "%" if units in ("pc1", "pch") else ind.unit
     return IndicatorDetail(
-        series_id=series_id, name=ind.name, unit=ind.unit, series=points,
+        series_id=series_id, name=ind.name, unit=unit, series=points,
         latest=points[-1].value, change=em.period_change(values),
         yoy=em.yoy_change(points), range_low=min(values),
         range_high=max(values), momentum=em.momentum_score(values),
-        recession_signals=_recession_signals(), updated_at=_now())
+        recession_signals=_recession_signals(),
+        recession_periods=provider.get_recession_periods(),
+        updated_at=_now())
