@@ -72,6 +72,14 @@ export function MarketsWatchlist({ quotes }: { quotes: WatchlistQuote[] }) {
             {COLUMNS.map((col, i) => (
               <th
                 key={col.key}
+                scope="col"
+                aria-sort={
+                  sortKey === col.key
+                    ? sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined
+                }
                 className={clsx('px-2 py-1.5', i === 0 ? 'text-left' : 'text-right')}
               >
                 <button
@@ -94,12 +102,12 @@ export function MarketsWatchlist({ quotes }: { quotes: WatchlistQuote[] }) {
                 </button>
               </th>
             ))}
-            <th className="px-2 py-1.5 text-right">
+            <th scope="col" className="px-2 py-1.5 text-right">
               <span className="font-mono text-[10px] tracking-widest text-ink-mute uppercase">
                 Trend
               </span>
             </th>
-            <th aria-label="Actions" className="w-8" />
+            <th scope="col" aria-label="Actions" className="w-8" />
           </tr>
         </thead>
         <tbody>
