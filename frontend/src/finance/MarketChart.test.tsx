@@ -58,3 +58,13 @@ test('switching the index refetches for the new symbol', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Nasdaq' }));
   await waitFor(() => expect(instrumentFn).toHaveBeenCalledWith('^IXIC', '1y'));
 });
+
+test('shows an error message when the chart data fails to load', async () => {
+  instrumentFn.mockRejectedValue(new Error('boom'));
+  renderWithProviders(<MarketChart indices={indices} />);
+  await waitFor(() =>
+    expect(
+      screen.getByText(/Couldn't load chart data/),
+    ).toBeInTheDocument(),
+  );
+});
