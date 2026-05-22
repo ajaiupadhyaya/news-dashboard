@@ -77,3 +77,37 @@ test('instrument defaults the range to 1y', async () => {
   );
   vi.unstubAllGlobals();
 });
+
+test('newsOverview requests the news overview endpoint', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ stories: [], updated_at: 'x' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const { api } = await import('./api');
+  await api.newsOverview();
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining('/api/news/overview'),
+    expect.anything(),
+  );
+  vi.unstubAllGlobals();
+});
+
+test('story encodes the cluster id into the path', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ id: 'c1' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const { api } = await import('./api');
+  await api.story('c1');
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining('/api/news/story/c1'),
+    expect.anything(),
+  );
+  vi.unstubAllGlobals();
+});
