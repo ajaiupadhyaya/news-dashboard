@@ -38,6 +38,8 @@ function makeBars(n: number) {
   return bars;
 }
 
+const bars = makeBars(120);
+
 const instrument = {
   symbol: 'AAPL',
   profile: {
@@ -46,11 +48,23 @@ const instrument = {
     price_to_book: 48.1, dividend_yield: 0.5, week52_high: 240,
     week52_low: 160, beta: 1.2,
   },
-  bars: makeBars(120),
+  bars,
   technicals: {
-    sma_20: makeBars(120).map((b) => b.close),
-    sma_50: makeBars(120).map((b) => b.close),
-    sma_200: makeBars(120).map(() => null),
+    sma_20: bars.map((b) => b.close),
+    sma_50: bars.map((b) => b.close),
+    sma_200: bars.map(() => null),
+    rsi: bars.map((_, i) => (i < 14 ? null : 55)),
+    macd_line: bars.map((_, i) => (i < 26 ? null : 0.4)),
+    macd_signal: bars.map((_, i) => (i < 26 ? null : 0.2)),
+    macd_histogram: bars.map((_, i) => (i < 26 ? null : 0.2)),
+    bb_upper: bars.map((b) => b.close + 5),
+    bb_middle: bars.map((b) => b.close),
+    bb_lower: bars.map((b) => b.close - 5),
+    volume: bars.map(() => 1000),
+  },
+  returns: {
+    week_1: 1.2, month_1: -3.4, month_3: 8.0, month_6: 12.5,
+    ytd: 6.1, year_1: 22.0, year_3: null,
   },
   stats: {
     momentum_1m: 4.2, momentum_3m: 9.1, momentum_6m: 15.3,
@@ -84,4 +98,13 @@ test('the overview drills down into an instrument page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'AAPL' })).toBeVisible();
   await expect(page.getByText('Apple Inc.')).toBeVisible();
   await expect(page.getByText('Fundamentals')).toBeVisible();
+
+  await expect(page.getByRole('group', { name: 'Timeframe' })).toBeVisible();
+  await expect(page.getByText('RSI (14)')).toBeVisible();
+  await expect(page.getByText('Returns')).toBeVisible();
+  await page.getByRole('button', { name: '5Y' }).click();
+  await expect(page.getByRole('button', { name: '5Y' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 });
