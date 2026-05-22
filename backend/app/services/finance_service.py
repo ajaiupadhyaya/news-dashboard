@@ -191,11 +191,9 @@ def build_markets() -> MarketsResponse:
             sectors.append(SectorChange(symbol=sym, name=name,
                                         change_pct=quote.change_pct))
 
-    all_changes = ([a.change_pct for a in asset_classes]
-                   + [i.change_pct for i in indices]
-                   + [m.change_pct for m in movers]
-                   + [s.change_pct for s in sectors])
-    breadth = Breadth(**metrics.breadth(all_changes))
+    # Market breadth samples the movers universe — the large-cap internals.
+    movers_changes = [m.change_pct for m in movers]
+    breadth = Breadth(**metrics.breadth(movers_changes))
 
     return MarketsResponse(asset_classes=asset_classes, indices=indices,
                            gainers=gainers, losers=losers, sectors=sectors,
