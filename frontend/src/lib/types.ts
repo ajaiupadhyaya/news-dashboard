@@ -160,7 +160,8 @@ export interface IndicatorDetail {
 /** Finance domain page (markets) — mirrors the backend markets models. */
 
 export interface AssetClass {
-  label: string;        // "Equities" | "Crypto" | "Commodities" | "Rates" | "FX"
+  /** "Equities" | "Crypto" | "Commodities" | "Rates" | "FX". */
+  label: string;
   symbol: string;
   price: number;
   change_pct: number;

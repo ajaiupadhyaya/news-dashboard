@@ -10,12 +10,12 @@ vi.mock('../lib/api', () => ({
       breadth: { advancers: 0, decliners: 0, unchanged: 0, advance_decline_ratio: 0 },
       updated_at: '2026-05-20T20:00:00+00:00',
     }),
-    instrument: vi.fn().mockResolvedValue({ symbol: 'AAPL' }),
     markets: vi.fn().mockResolvedValue({
       asset_classes: [], indices: [], gainers: [], losers: [], sectors: [],
       breadth: { advancers: 0, decliners: 0, unchanged: 0, advance_decline_ratio: 0 },
       updated_at: '2026-05-21T20:00:00+00:00',
     }),
+    instrument: vi.fn().mockResolvedValue({ symbol: 'AAPL' }),
   },
 }));
 
