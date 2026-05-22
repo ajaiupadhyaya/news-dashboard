@@ -30,15 +30,21 @@ def _get(path: str, params: dict) -> dict | None:
         return None
 
 
-def get_series(series_id: str, units: str = "lin") -> list[IndicatorPoint]:
+def get_series(series_id: str, units: str = "lin",
+               observation_start: str | None = None) -> list[IndicatorPoint]:
     """Observations for a FRED series, oldest-first. [] on any failure.
 
     `units` is a FRED transform code applied server-side: "lin" (raw),
-    "pc1" (percent change from a year ago), "chg" (change from the prior
-    observation). FRED encodes missing observations as ".", skipped here.
+    "pc1" (percent change from a year ago), "pch" (percent change from the
+    prior observation), "chg" (change from the prior observation).
+    `observation_start` (ISO date), when given, bounds the returned window;
+    FRED still computes transforms over the full underlying series.
+    FRED encodes missing observations as ".", skipped here.
     """
-    data = _get("series/observations",
-                {"series_id": series_id, "sort_order": "asc", "units": units})
+    params = {"series_id": series_id, "sort_order": "asc", "units": units}
+    if observation_start:
+        params["observation_start"] = observation_start
+    data = _get("series/observations", params)
     if not data or "observations" not in data:
         return []
     points: list[IndicatorPoint] = []

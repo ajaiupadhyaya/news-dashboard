@@ -80,3 +80,33 @@ def test_get_recession_periods_derives_intervals(monkeypatch):
 def test_get_recession_periods_empty_on_failure(monkeypatch):
     monkeypatch.setattr(fred_provider, "get_series", lambda sid, **kw: [])
     assert fred_provider.get_recession_periods() == []
+
+
+def test_get_series_passes_observation_start(monkeypatch):
+    monkeypatch.setenv("FRED_API_KEY", "k")
+    captured = {}
+
+    class CapturingHttpx:
+        @staticmethod
+        def get(url, params=None, timeout=None):
+            captured.update(params or {})
+            return FakeResponse({"observations": []})
+
+    monkeypatch.setattr(fred_provider, "httpx", CapturingHttpx)
+    fred_provider.get_series("CPIAUCSL", observation_start="2020-01-01")
+    assert captured["observation_start"] == "2020-01-01"
+
+
+def test_get_series_omits_observation_start_when_none(monkeypatch):
+    monkeypatch.setenv("FRED_API_KEY", "k")
+    captured = {}
+
+    class CapturingHttpx:
+        @staticmethod
+        def get(url, params=None, timeout=None):
+            captured.update(params or {})
+            return FakeResponse({"observations": []})
+
+    monkeypatch.setattr(fred_provider, "httpx", CapturingHttpx)
+    fred_provider.get_series("CPIAUCSL")
+    assert "observation_start" not in captured
