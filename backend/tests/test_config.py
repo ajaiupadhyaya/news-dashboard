@@ -45,3 +45,15 @@ def test_fred_api_key_read_from_env(monkeypatch):
 def test_fred_api_key_none_when_unset(monkeypatch):
     monkeypatch.delenv("FRED_API_KEY", raising=False)
     assert get_settings().fred_api_key is None
+
+
+def test_news_api_key_read_from_env(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setenv("NEWS_API_KEY", "news-key-123")
+    assert get_settings().news_api_key == "news-key-123"
+
+
+def test_news_api_key_none_when_unset(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.delenv("NEWS_API_KEY", raising=False)
+    assert get_settings().news_api_key is None
