@@ -53,3 +53,21 @@ def test_breadth_counts():
     assert result["decliners"] == 2
     assert result["unchanged"] == 1
     assert result["advance_decline_ratio"] == pytest.approx(1.0)
+
+
+def test_rsi_all_gains_is_100():
+    rising = [float(i) for i in range(1, 40)]
+    out = metrics.rsi(rising, period=14)
+    assert out[:14] == [None] * 14          # not enough deltas yet
+    assert out[14] == 100.0                 # only gains -> RSI 100
+    assert out[-1] == 100.0
+
+
+def test_rsi_all_losses_is_zero():
+    falling = [float(i) for i in range(40, 1, -1)]
+    out = metrics.rsi(falling, period=14)
+    assert out[-1] == 0.0
+
+
+def test_rsi_short_series_is_all_none():
+    assert metrics.rsi([1.0, 2.0, 3.0], period=14) == [None, None, None]
