@@ -15,6 +15,8 @@ test('renders each index with a friendly name and a drill-down link', () => {
   expect(screen.getByText('S&P 500')).toBeInTheDocument();
   expect(screen.getByText('VIX')).toBeInTheDocument();
   expect(screen.getByText('5,400.00')).toBeInTheDocument();
+  expect(screen.getByText('+0.22%')).toBeInTheDocument();
+  expect(screen.getByText('-2.10%')).toBeInTheDocument();
   const link = screen.getByRole('link', { name: /S&P 500/ });
   expect(link).toHaveAttribute('href', '/finance/%5EGSPC');
 });

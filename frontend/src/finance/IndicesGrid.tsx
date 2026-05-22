@@ -15,7 +15,7 @@ const INDEX_NAME: Record<string, string> = {
 /** The major indices, each row linking to its drill-down. */
 export function IndicesGrid({ indices }: { indices: WatchlistQuote[] }) {
   return (
-    <ul className="flex flex-col gap-0.5">
+    <ul aria-label="Market indices" className="flex flex-col gap-0.5">
       {indices.map((q) => (
         <li key={q.symbol}>
           <Link
@@ -24,7 +24,7 @@ export function IndicesGrid({ indices }: { indices: WatchlistQuote[] }) {
             className="flex items-center gap-3 rounded-md px-2 py-1.5
                        transition-colors hover:bg-raised"
           >
-            <span className="w-24 font-mono text-xs text-ink">
+            <span className="w-24 font-mono text-xs font-medium text-ink">
               {INDEX_NAME[q.symbol] ?? q.symbol}
             </span>
             <Sparkline values={q.sparkline} width={64} height={22} />
