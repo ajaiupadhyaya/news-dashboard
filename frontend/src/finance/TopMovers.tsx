@@ -8,13 +8,13 @@ function MoverRow({ mover }: { mover: Mover }) {
     <Link
       to={`/finance/${encodeURIComponent(mover.symbol)}`}
       viewTransition
-      className="flex items-center gap-2 rounded-md px-2 py-1
+      className="flex items-center gap-3 rounded-md px-2 py-1.5
                  transition-colors hover:bg-raised"
     >
       <span className="w-14 font-mono text-xs font-medium text-ink">
         {mover.symbol}
       </span>
-      <span className="ml-auto font-mono text-xs tabular-nums text-ink-soft">
+      <span className="ml-auto font-mono text-xs tabular-nums text-ink">
         {formatPrice(mover.price)}
       </span>
       <span

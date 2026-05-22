@@ -20,4 +20,7 @@ test('renders the gainers and losers sections', () => {
   expect(screen.getByRole('link', { name: /NVDA/ })).toHaveAttribute(
     'href', '/finance/NVDA',
   );
+  expect(screen.getByRole('link', { name: /INTC/ })).toHaveAttribute(
+    'href', '/finance/INTC',
+  );
 });
