@@ -13,7 +13,7 @@ export function AssetClassStrip({
   assetClasses: AssetClass[];
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
       {assetClasses.map((ac) => (
         <motion.div
           key={ac.label}
@@ -37,7 +37,7 @@ export function AssetClassStrip({
           <span className="font-mono text-sm tabular-nums text-ink">
             {formatValue(ac.price)}
           </span>
-          <Sparkline values={ac.sparkline} width={140} height={28} />
+          <Sparkline values={ac.sparkline} />
         </motion.div>
       ))}
     </div>
