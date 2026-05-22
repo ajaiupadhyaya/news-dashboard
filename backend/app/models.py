@@ -173,3 +173,52 @@ class MarketsResponse(BaseModel):
     sectors: list[SectorChange]
     breadth: Breadth
     updated_at: str
+
+
+class Article(BaseModel):
+    id: str            # sha1 of the article URL — stable across refreshes
+    title: str
+    summary: str
+    url: str
+    source: str        # outlet name, e.g. "Reuters"
+    published_at: str  # ISO datetime
+    category: str      # e.g. "general", "world", "business"
+    image_url: str | None = None
+
+
+class StoryCluster(BaseModel):
+    """Overview-level summary of a clustered story."""
+    id: str
+    headline: str
+    summary: str
+    category: str
+    source_count: int          # distinct outlets covering the story
+    article_count: int
+    momentum: float            # coverage-velocity score
+    status: str                # "surging" | "steady" | "fading"
+    latest_published_at: str
+
+
+class NewsOverview(BaseModel):
+    stories: list[StoryCluster]
+    updated_at: str
+
+
+class MomentumPoint(BaseModel):
+    time: str          # ISO hour bucket
+    count: int         # articles published in that hour
+
+
+class StoryDetail(BaseModel):
+    id: str
+    headline: str
+    summary: str
+    category: str
+    source_count: int
+    article_count: int
+    momentum: float
+    status: str
+    articles: list[Article]            # the development timeline, oldest-first
+    momentum_series: list[MomentumPoint]
+    related: list[StoryCluster]
+    updated_at: str
