@@ -53,7 +53,7 @@ def test_economics_dashboard_endpoint(db, monkeypatch):
 def test_economics_indicator_accepts_transform_and_range(db, monkeypatch):
     seen = {}
 
-    def fake_get_series(sid, units="lin", observation_start=None):
+    def fake_get_series(sid, units="lin", observation_start=None, **kw):
         seen[sid] = {"units": units, "observation_start": observation_start}
         return _series(40)
 

@@ -30,7 +30,7 @@ def indicator(series_id: str, transform: str | None = None,
     key = f"economics:indicator:{sid}:{transform}:{range}"
     result = cache.get_or_compute(
         key, lambda: economics_service.build_indicator(
-            series_id, transform=transform, range_=range))
+            sid, transform=transform, range_=range))
     if result is None:
         raise HTTPException(status_code=404,
                             detail=f"No data for {series_id}")
