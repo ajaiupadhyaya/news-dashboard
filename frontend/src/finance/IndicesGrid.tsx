@@ -3,14 +3,7 @@ import type { WatchlistQuote } from '../lib/types';
 import { Sparkline } from '../charts/Sparkline';
 import { trendColor } from '../charts/colors';
 import { formatPercent, formatValue } from '../lib/format';
-
-const INDEX_NAME: Record<string, string> = {
-  '^GSPC': 'S&P 500',
-  '^DJI': 'Dow Jones',
-  '^IXIC': 'Nasdaq',
-  '^RUT': 'Russell 2000',
-  '^VIX': 'VIX',
-};
+import { INDEX_NAMES } from './indexNames';
 
 /** The major indices, each row linking to its drill-down. */
 export function IndicesGrid({ indices }: { indices: WatchlistQuote[] }) {
@@ -25,7 +18,7 @@ export function IndicesGrid({ indices }: { indices: WatchlistQuote[] }) {
                        transition-colors hover:bg-raised"
           >
             <span className="w-24 font-mono text-xs font-medium text-ink">
-              {INDEX_NAME[q.symbol] ?? q.symbol}
+              {INDEX_NAMES[q.symbol] ?? q.symbol}
             </span>
             <Sparkline values={q.sparkline} width={64} height={22} />
             <span className="ml-auto font-mono text-xs tabular-nums text-ink">

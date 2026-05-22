@@ -6,14 +6,7 @@ import { ChartTypeToggle, TimeframeControl } from '../charts/ChartControls';
 import type { ChartType, Timeframe } from '../charts/ChartControls';
 import { PanelSkeleton } from '../components/PanelSkeleton';
 import type { WatchlistQuote } from '../lib/types';
-
-const INDEX_NAME: Record<string, string> = {
-  '^GSPC': 'S&P 500',
-  '^DJI': 'Dow',
-  '^IXIC': 'Nasdaq',
-  '^RUT': 'Russell 2000',
-  '^VIX': 'VIX',
-};
+import { INDEX_NAMES } from './indexNames';
 
 /** The hero market chart — pick an index, a timeframe, and a chart type.
  *  Bars come from the shared `useInstrument` hook, which keeps the previous
@@ -45,7 +38,7 @@ export function MarketChart({ indices }: { indices: WatchlistQuote[] }) {
                   : 'text-ink-mute hover:text-ink',
               )}
             >
-              {INDEX_NAME[idx.symbol] ?? idx.symbol}
+              {INDEX_NAMES[idx.symbol] ?? idx.symbol}
             </button>
           ))}
         </div>
@@ -62,7 +55,7 @@ export function MarketChart({ indices }: { indices: WatchlistQuote[] }) {
             Couldn't load chart data.
           </p>
         )}
-        {data && (
+        {!isError && data && (
           <PriceChart
             bars={data.bars}
             technicals={data.technicals}
