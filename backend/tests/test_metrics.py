@@ -71,3 +71,20 @@ def test_rsi_all_losses_is_zero():
 
 def test_rsi_short_series_is_all_none():
     assert metrics.rsi([1.0, 2.0, 3.0], period=14) == [None, None, None]
+
+
+def test_macd_shapes_and_alignment():
+    prices = [float(i) for i in range(60)]
+    m = metrics.macd(prices)
+    assert set(m.keys()) == {"macd", "signal", "histogram"}
+    assert len(m["macd"]) == 60
+    assert m["macd"][:25] == [None] * 25          # None until slow EMA fills
+    assert m["macd"][25] is not None
+    assert m["signal"][-1] is not None
+    assert m["histogram"][-1] is not None
+
+
+def test_macd_short_series_is_all_none():
+    m = metrics.macd([1.0, 2.0, 3.0])
+    assert m["macd"] == [None, None, None]
+    assert m["signal"] == [None, None, None]

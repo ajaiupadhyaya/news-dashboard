@@ -79,6 +79,45 @@ def rsi(prices: list[float], period: int = 14) -> list[float | None]:
     return out
 
 
+def _ema(values: list[float], period: int) -> list[float]:
+    """Exponential moving average, seeded with the first value."""
+    if not values:
+        return []
+    k = 2.0 / (period + 1)
+    out = [values[0]]
+    for v in values[1:]:
+        out.append(v * k + out[-1] * (1.0 - k))
+    return out
+
+
+def macd(prices: list[float], fast: int = 12, slow: int = 26,
+         signal: int = 9) -> dict[str, list[float | None]]:
+    """MACD line, signal line, and histogram, each aligned to `prices`.
+
+    Entries before the slow EMA has filled (`slow - 1`) are None. Returns a
+    dict with keys "macd", "signal", "histogram".
+    """
+    n = len(prices)
+    empty: list[float | None] = [None] * n
+    if n < slow:
+        return {"macd": empty[:], "signal": empty[:], "histogram": empty[:]}
+
+    ema_fast = _ema(prices, fast)
+    ema_slow = _ema(prices, slow)
+    macd_line: list[float | None] = [None] * n
+    for i in range(slow - 1, n):
+        macd_line[i] = round(ema_fast[i] - ema_slow[i], 4)
+
+    defined = [m for m in macd_line if m is not None]
+    sig = _ema(defined, signal)
+    signal_line: list[float | None] = [None] * n
+    histogram: list[float | None] = [None] * n
+    for offset, i in enumerate(range(slow - 1, n)):
+        signal_line[i] = round(sig[offset], 4)
+        histogram[i] = round((macd_line[i] or 0.0) - sig[offset], 4)
+    return {"macd": macd_line, "signal": signal_line, "histogram": histogram}
+
+
 def breadth(changes: list[float]) -> dict:
     advancers = sum(1 for c in changes if c > 0)
     decliners = sum(1 for c in changes if c < 0)
