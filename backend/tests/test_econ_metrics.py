@@ -61,6 +61,7 @@ def test_recession_intervals_finds_contiguous_runs():
 
 
 def test_recession_intervals_handles_open_final_run():
+    # No closing 0 observation — the open run is capped at the last point.
     pts = _points([("2020-01-01", 0), ("2020-02-01", 1), ("2020-03-01", 1)])
     assert em.recession_intervals(pts) == [("2020-02-01", "2020-03-01")]
 

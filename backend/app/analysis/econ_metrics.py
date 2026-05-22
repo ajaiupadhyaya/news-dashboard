@@ -76,8 +76,10 @@ def momentum_score(values: list[float], window: int = 6) -> float:
 
 def recession_intervals(points: list[IndicatorPoint]) -> list[tuple[str, str]]:
     """Contiguous (start_date, end_date) intervals where a 0/1 indicator
-    series is 'on' (value >= 0.5). An interval ends at the first observation
-    back below the threshold; an open final run ends at the last point."""
+    series is 'on' (value >= 0.5). The end date is the first observation
+    back below the threshold — an *exclusive* bound, so shading a band from
+    start to end on a continuous time axis covers exactly the 'on' span.
+    An open final run (no closing observation) ends at the last point."""
     intervals: list[tuple[str, str]] = []
     start: str | None = None
     for p in points:
