@@ -1,6 +1,6 @@
 import { formatFullDate } from '../lib/format';
 
-export function AppBar() {
+export function AppBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const today = formatFullDate(new Date().toISOString());
   return (
     <header className="flex items-center justify-between border-b border-border
@@ -13,6 +13,7 @@ export function AppBar() {
       </div>
       <button
         type="button"
+        onClick={onOpenSearch}
         className="rounded-md border border-border px-3 py-1.5 text-xs text-ink-soft
                    transition-colors hover:border-border-strong"
       >

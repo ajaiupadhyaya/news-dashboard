@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { Panel } from './Panel';
 import { ComingSoonPanel } from './ComingSoonPanel';
 import { PanelSkeleton } from './PanelSkeleton';
@@ -42,7 +43,11 @@ test('QuadrantGrid renders all four domain slots', () => {
 });
 
 test('AppShell renders the app bar, briefing ribbon, and children', () => {
-  render(<AppShell><div>shell-body</div></AppShell>);
+  render(
+    <MemoryRouter>
+      <AppShell><div>shell-body</div></AppShell>
+    </MemoryRouter>,
+  );
   expect(screen.getByText('NMD')).toBeInTheDocument();
   expect(screen.getByText(/Daily Briefing/i)).toBeInTheDocument();
   expect(screen.getByText('shell-body')).toBeInTheDocument();
