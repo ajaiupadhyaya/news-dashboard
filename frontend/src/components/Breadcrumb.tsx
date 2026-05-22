@@ -22,7 +22,7 @@ export function Breadcrumb({ trail }: { trail: Crumb[] }) {
         return (
           <Fragment key={crumb.label}>
             {i > 0 && <span aria-hidden="true">/</span>}
-            {crumb.to && !last ? (
+            {crumb.to ? (
               <Link
                 to={crumb.to}
                 viewTransition

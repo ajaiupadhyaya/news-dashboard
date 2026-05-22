@@ -19,3 +19,9 @@ test('renders linked crumbs and a plain final crumb', () => {
   expect(screen.queryByRole('link', { name: 'AAPL' })).toBeNull();
   expect(screen.getByText('AAPL')).toBeInTheDocument();
 });
+
+test('a single-crumb trail renders the arrow with no separator', () => {
+  renderWithProviders(<Breadcrumb trail={[{ label: 'Dashboard' }]} />);
+  expect(screen.getByText('← Dashboard')).toBeInTheDocument();
+  expect(screen.queryByText('/')).toBeNull();
+});
