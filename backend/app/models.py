@@ -205,6 +205,82 @@ class Article(BaseModel):
     image_url: str | None = None
 
 
+# ---- Quant Lab ----
+from typing import Literal
+
+
+class CostModelSchema(BaseModel):
+    commission: float = 0.0
+    slippage_bps: float = 5.0
+    allow_short: bool = False
+
+
+class StrategyMeta(BaseModel):
+    slug: str
+    name: str
+    category: Literal["classic", "alpha", "benchmark"]
+    methodology_blurb: str
+    universe_kind: Literal["spy", "sp500", "pairs-fixed", "news-top100"]
+    inception_date: str
+    live_start_date: str
+    chosen_params: dict
+    cost_model: CostModelSchema = CostModelSchema()
+    enabled: bool = True
+    last_forward_step_date: str | None = None
+
+
+class EquityPoint(BaseModel):
+    date: str
+    equity: float
+    cash: float
+    gross_exposure: float
+    net_exposure: float
+    daily_return: float
+    phase: Literal["backtest", "forward"]
+
+
+class TradeRecord(BaseModel):
+    date: str
+    symbol: str
+    side: Literal["buy", "sell", "short", "cover"]
+    qty: int
+    price: float
+    commission: float
+    notional: float
+    phase: Literal["backtest", "forward"]
+
+
+class WalkforwardWindow(BaseModel):
+    train_start: str
+    train_end: str
+    test_start: str
+    test_end: str
+    chosen_params: dict
+    oos_metrics: dict[str, float]
+
+
+class ParameterSweepCell(BaseModel):
+    params: dict
+    sharpe: float
+
+
+class RunStatus(BaseModel):
+    status: Literal["pending", "running", "success", "failed"]
+    progress: dict[str, int]   # {windows_done, windows_total}
+    error: str | None = None
+
+
+class TearSheetMetrics(BaseModel):
+    total_return: float
+    cagr: float
+    sharpe: float
+    sortino: float
+    calmar: float
+    max_drawdown: float
+    win_rate: float
+    volatility: float
+
+
 class StoryCluster(BaseModel):
     """Overview-level summary of a clustered story."""
     id: str
