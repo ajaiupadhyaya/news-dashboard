@@ -11,3 +11,4 @@ feedparser>=6.0
 fastembed>=0.4
 vectorbt>=0.26
 quantstats>=0.0.62
+statsmodels>=0.14
