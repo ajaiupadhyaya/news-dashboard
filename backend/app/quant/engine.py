@@ -14,6 +14,7 @@ Adapted for vectorbt 1.0.0:
 
 from __future__ import annotations
 
+import gc
 import itertools
 from dataclasses import dataclass
 from typing import Callable
@@ -226,6 +227,13 @@ def run_grid(
             initial_equity=initial_equity, ctx=ctx,
         )
         rows.append({**params, **res.metrics})
+        # vectorbt's Portfolio holds cyclic references to its trade/order
+        # records that the default generational GC leaves around between
+        # iterations. On a full-S&P-500 sweep this accumulates ~100 MB per
+        # combo and OOMs on 16 GB machines mid-bootstrap. Explicit collect
+        # after dropping the local ref keeps peak RSS bounded.
+        del res
+        gc.collect()
     return pd.DataFrame(rows)
 
 
