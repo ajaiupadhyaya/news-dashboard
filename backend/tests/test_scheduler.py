@@ -92,3 +92,15 @@ def test_warm_news_populates_cache(db, monkeypatch):
                         lambda texts: [[1.0, 0.0], [0.9, 0.1], [0.0, 1.0]])
     scheduler.warm_news()
     assert cache.get("news:overview") is not None
+
+
+def test_quant_jobs_registered(monkeypatch):
+    """Verify that warm_quant_bars and forward_step_all_strategies are registered."""
+    monkeypatch.setenv("SCHEDULER_ENABLED", "true")
+    s = scheduler.start_scheduler()
+    try:
+        ids = {job.id for job in s.get_jobs()}
+        assert "warm_quant_bars" in ids
+        assert "forward_step_all_strategies" in ids
+    finally:
+        scheduler.shutdown_scheduler()

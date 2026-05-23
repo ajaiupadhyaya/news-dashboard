@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.cache import cache
 from app.config import get_settings
+from app.quant import jobs as quant_jobs
 from app.services import economics_service, finance_service, news_service
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,24 @@ def warm_news() -> None:
         logger.warning("warm_news failed", exc_info=True)
 
 
+def warm_quant_bars() -> None:
+    """Refresh bar_cache for the enabled-strategy universes."""
+    try:
+        n = quant_jobs.warm_quant_bars()
+        logger.info("warmed quant bars: %d rows", n)
+    except Exception:
+        logger.warning("warm_quant_bars failed", exc_info=True)
+
+
+def forward_step_all_strategies() -> None:
+    """Extend every enabled strategy's equity curve by one day."""
+    try:
+        summary = quant_jobs.forward_step_all_strategies()
+        logger.info("forward_step_all summary: %s", summary)
+    except Exception:
+        logger.warning("forward_step_all_strategies failed", exc_info=True)
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     """Start background jobs when SCHEDULER_ENABLED=true; otherwise no-op."""
     global _scheduler
@@ -72,6 +91,10 @@ def start_scheduler() -> BackgroundScheduler | None:
                   max_instances=1, coalesce=True)
     sched.add_job(warm_news, "interval", minutes=15, id="warm_news",
                   max_instances=1, coalesce=True)
+    sched.add_job(warm_quant_bars, "cron", hour=2, minute=30,
+                  id="warm_quant_bars", max_instances=1, coalesce=True)
+    sched.add_job(forward_step_all_strategies, "cron", hour=2, minute=45,
+                  id="forward_step_all_strategies", max_instances=1, coalesce=True)
     sched.start()
     _scheduler = sched
     logger.info("scheduler started")

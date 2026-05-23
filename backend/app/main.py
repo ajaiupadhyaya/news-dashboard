@@ -12,6 +12,7 @@ from app.routes.economics import router as economics_router
 from app.routes.finance import router as finance_router
 from app.routes.health import router as health_router
 from app.routes.news import router as news_router
+from app.routes.quant import router as quant_router
 from app.routes.watchlist import router as watchlist_router
 from app.scheduler import shutdown_scheduler, start_scheduler
 
@@ -45,3 +46,4 @@ app.include_router(watchlist_router)
 app.include_router(finance_router)
 app.include_router(economics_router)
 app.include_router(news_router)
+app.include_router(quant_router)
