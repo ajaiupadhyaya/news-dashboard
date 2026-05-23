@@ -33,9 +33,27 @@ def _download_yf(symbols: list[str], start: str, end: str) -> pd.DataFrame:
         interval="1d",
         auto_adjust=False,
         progress=False,
-        group_by="ticker" if len(symbols) > 1 else "column",
+        group_by="ticker",
         threads=True,
     )
+
+
+def _slice_symbol(df: pd.DataFrame, symbol: str) -> pd.DataFrame | None:
+    """Return a flat-column per-symbol view of a yfinance download.
+
+    yfinance always returns MultiIndex columns; the ticker level can be on
+    either side depending on `group_by`. This handles both layouts plus
+    the flat-column shape returned by test mocks.
+    """
+    if not isinstance(df.columns, pd.MultiIndex):
+        return df
+    level0 = df.columns.get_level_values(0)
+    if symbol in level0:
+        return df[symbol]
+    level1 = df.columns.get_level_values(1)
+    if symbol in level1:
+        return df.xs(symbol, axis=1, level=1)
+    return None
 
 
 def upsert_bars(symbol: str, df: pd.DataFrame) -> int:
@@ -137,8 +155,9 @@ def fetch_and_cache(symbols: list[str], start: str, end: str) -> int:
             continue
         for sym in chunk:
             try:
-                sub = df[sym] if len(chunk) > 1 else df
+                sub = _slice_symbol(df, sym)
                 if sub is None or sub.empty:
+                    logger.warning("no data returned for %s in chunk %s", sym, chunk)
                     continue
                 sub = sub.dropna(subset=["Close", "Adj Close"])
                 written += upsert_bars(sym, sub)
