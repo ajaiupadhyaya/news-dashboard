@@ -75,6 +75,50 @@ news_clusters = Table(
     Column("rank_order", Integer),     # 0 = top story
 )
 
+bar_cache = Table(
+    "bar_cache", metadata,
+    Column("symbol", String(20), primary_key=True),
+    Column("date", String(10), primary_key=True),     # ISO yyyy-mm-dd
+    Column("open", Float),
+    Column("high", Float),
+    Column("low", Float),
+    Column("close", Float),
+    Column("adj_close", Float),
+    Column("volume", Integer),
+    Column("source", String(20)),                     # "yfinance"
+    Column("fetched_at", String(32)),
+)
+
+strategies = Table(
+    "strategies", metadata,
+    Column("slug", String(64), primary_key=True),
+    Column("name", String(128)),
+    Column("category", String(40)),                  # "classic" | "alpha" | "benchmark"
+    Column("methodology_blurb", Text),
+    Column("universe_kind", String(32)),             # "spy" | "sp500" | "pairs-fixed" | "news-top100"
+    Column("inception_date", String(10)),            # ISO
+    Column("live_start_date", String(10)),           # ISO
+    Column("chosen_params", Text),                   # JSON
+    Column("cost_model", Text),                      # JSON {commission, slippage_bps, allow_short}
+    Column("enabled", Integer),                      # 0/1
+    Column("last_forward_step_date", String(10)),    # ISO, nullable
+)
+
+strategy_runs = Table(
+    "strategy_runs", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("strategy_slug", String(64), index=True),
+    Column("run_kind", String(40)),                  # "inception-walkforward" | "param-sweep"
+    Column("started_at", String(32)),
+    Column("finished_at", String(32)),               # nullable
+    Column("status", String(16)),                    # "pending"|"running"|"success"|"failed"
+    Column("progress", Text),                        # JSON {windows_done, windows_total}
+    Column("error", Text),                           # nullable
+    Column("summary_metrics", Text),                 # JSON, nullable
+    Column("walkforward_windows", Text),             # JSON, nullable
+    Column("param_sweep", Text),                     # JSON, nullable
+)
+
 _engine: Engine | None = None
 
 
