@@ -22,6 +22,16 @@ const STATIC_DESTINATIONS: Destination[] = [
     to: '/economics/A191RL1Q225SBEA' },
   { label: 'Fed Funds Rate', hint: 'Indicator', to: '/economics/FEDFUNDS' },
   { label: '10-Year Treasury', hint: 'Indicator', to: '/economics/DGS10' },
+  { label: 'Quant Lab', hint: 'Page', to: '/quant' },
+  { label: 'SMA Crossover', hint: 'Strategy', to: '/quant/strategy/sma-crossover' },
+  { label: 'RSI Mean Reversion', hint: 'Strategy', to: '/quant/strategy/rsi-mean-reversion' },
+  { label: 'Cross-Sectional Momentum', hint: 'Strategy', to: '/quant/strategy/cross-sectional-momentum' },
+  { label: 'Pairs Trading', hint: 'Strategy', to: '/quant/strategy/pairs-trading' },
+  { label: 'Bollinger Breakout', hint: 'Strategy', to: '/quant/strategy/bollinger-breakout' },
+  { label: 'News-Sentiment Momentum', hint: 'Strategy', to: '/quant/strategy/news-sentiment-momentum' },
+  { label: 'Macro-Regime Overlay', hint: 'Strategy', to: '/quant/strategy/macro-regime-overlay' },
+  { label: 'Multi-Factor Combo', hint: 'Strategy', to: '/quant/strategy/multi-factor-combo' },
+  { label: 'Buy & Hold SPY', hint: 'Strategy', to: '/quant/strategy/buy-hold-spy' },
 ];
 
 interface CommandPaletteProps {
