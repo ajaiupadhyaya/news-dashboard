@@ -236,7 +236,15 @@ def inception_walkforward(
             )
 
             if strategy.sweep_grid and not grid_df.empty:
-                best_row = grid_df.sort_values("sharpe", ascending=False).iloc[0]
+                # Drop degenerate combos: zero total_return implies no trades
+                # were taken, which makes Sharpe meaningless (often nan/inf).
+                viable = grid_df[
+                    grid_df["sharpe"].replace([float("inf"), float("-inf")], pd.NA).notna()
+                    & (grid_df["total_return"].abs() > 1e-9)
+                ]
+                if viable.empty:
+                    viable = grid_df  # fall back if everything is degenerate
+                best_row = viable.sort_values("sharpe", ascending=False).iloc[0]
                 best_params = {
                     k: best_row[k] for k in strategy.sweep_grid.keys()
                 }
