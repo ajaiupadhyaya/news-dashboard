@@ -30,8 +30,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
+# yfinance logs every "possibly delisted" symbol at ERROR level — for our
+# static S&P 500 snapshot that means ~30-50 acquired/delisted names spamming
+# ERROR lines that ARE handled correctly by fetch_and_cache's try/except.
+# Silence the noise so the bootstrap's progress stays readable. (Production
+# scheduler jobs keep their own warm_bars logging.)
+logging.getLogger("yfinance").setLevel(logging.CRITICAL)
+
 from app.database import init_db
-from app.quant.bars import fetch_and_cache
+from app.quant.bars import fetch_and_cache, get_cached_dates
 from app.quant.orchestration import inception_walkforward
 from app.quant.registry import STRATEGIES
 from app.quant.universe import SP500_SYMBOLS
@@ -59,13 +66,22 @@ def main() -> None:
 
     # 1. Fetch bars for the full universe (≥7 years of daily data).
     _banner("[1/2] Fetching daily bars (~1.4M rows expected)")
+    print(
+        "    (yfinance ERROR lines for delisted/acquired tickers are noise — "
+        "ignore them.)"
+    )
     universe = sorted(
         set(SP500_SYMBOLS) | {"SPY", "XLP", "XLU", "XLV"}
     )
     t0 = time.time()
     n = fetch_and_cache(universe, start="2018-01-02", end="2025-01-02")
     dt = time.time() - t0
-    print(f"  wrote {n} rows across {len(universe)} symbols in {dt:.0f}s")
+    # Summarize how many distinct symbols ended up in the cache vs how many we tried.
+    cached_symbols = sum(1 for s in universe if get_cached_dates(s))
+    print(
+        f"  wrote {n} rows in {dt:.0f}s — {cached_symbols}/{len(universe)} "
+        f"symbols have data (the rest are stale snapshot tickers)"
+    )
 
     # 2. Run inception walk-forward for each registered strategy.
     _banner("[2/2] Running inception walk-forward for each strategy")
