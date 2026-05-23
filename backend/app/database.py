@@ -75,6 +75,20 @@ news_clusters = Table(
     Column("rank_order", Integer),     # 0 = top story
 )
 
+bar_cache = Table(
+    "bar_cache", metadata,
+    Column("symbol", String(20), primary_key=True),
+    Column("date", String(10), primary_key=True),     # ISO yyyy-mm-dd
+    Column("open", Float),
+    Column("high", Float),
+    Column("low", Float),
+    Column("close", Float),
+    Column("adj_close", Float),
+    Column("volume", Integer),
+    Column("source", String(20)),                     # "yfinance"
+    Column("fetched_at", String(32)),
+)
+
 _engine: Engine | None = None
 
 
