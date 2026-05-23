@@ -14,7 +14,9 @@ Adapted for vectorbt 1.0.0:
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -184,3 +186,44 @@ def run_single(
         trades=_extract_trades(pf),
         metrics=_extract_metrics(pf, period_days),
     )
+
+
+def run_grid(
+    strategy: Strategy,
+    bars: pd.DataFrame,
+    *,
+    grid: dict[str, list],
+    cost_model: CostModel | None = None,
+    initial_equity: float = 100_000.0,
+    ctx: StrategyContext | None = None,
+    constraint: Callable[[dict], bool] | None = None,
+) -> pd.DataFrame:
+    """Run every parameter combination from `grid` through `run_single`.
+
+    Returns a DataFrame with one row per valid combo. Columns:
+        <param names from grid>, sharpe, total_return, cagr, sortino,
+        calmar, max_drawdown, win_rate, volatility
+    Rows are NOT sorted; caller picks the winner.
+    """
+    if not grid:
+        # Single-row result with empty params.
+        res = run_single(
+            strategy, bars,
+            params={}, cost_model=cost_model,
+            initial_equity=initial_equity, ctx=ctx,
+        )
+        return pd.DataFrame([{**res.metrics}])
+
+    names = list(grid.keys())
+    rows: list[dict] = []
+    for combo in itertools.product(*(grid[n] for n in names)):
+        params = dict(zip(names, combo))
+        if constraint and not constraint(params):
+            continue
+        res = run_single(
+            strategy, bars,
+            params=params, cost_model=cost_model,
+            initial_equity=initial_equity, ctx=ctx,
+        )
+        rows.append({**params, **res.metrics})
+    return pd.DataFrame(rows)

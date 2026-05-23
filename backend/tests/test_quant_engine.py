@@ -78,3 +78,36 @@ def test_run_single_applies_slippage():
     )
     # With slippage, final equity must be strictly less.
     assert res_slip.equity.iloc[-1] < res_zero.equity.iloc[-1]
+
+
+def test_run_grid_returns_one_row_per_valid_combo():
+    from app.quant.engine import run_grid
+    from app.quant.strategies.sma_crossover import SmaCrossover
+
+    bars = _spy_series(n=300, drift=0.0008)
+    sma = SmaCrossover()
+    df = run_grid(
+        sma, bars, grid=sma.sweep_grid,
+        cost_model=CostModel(commission=0, slippage_bps=0),
+        initial_equity=100_000,
+        constraint=lambda p: p["fast"] < p["slow"],
+    )
+    # SMA grid: fast ∈ {10,20,50}, slow ∈ {50,100,200}; with fast<slow constraint:
+    # exclude (50,50) → 8 valid combos.
+    assert len(df) == 8
+    assert {"fast", "slow"}.issubset(df.columns)
+    assert "sharpe" in df.columns
+    assert "total_return" in df.columns
+
+
+def test_run_grid_without_constraint_runs_all_combos():
+    from app.quant.engine import run_grid
+    grid = {"a": [1, 2], "b": [10, 20, 30]}
+    # Use BuyHoldSPY but pass an ignored grid — it doesn't read params.
+    bars = _spy_series(n=50)
+    df = run_grid(
+        BuyHoldSPY(), bars, grid=grid,
+        cost_model=CostModel(commission=0, slippage_bps=0),
+        initial_equity=100_000,
+    )
+    assert len(df) == 6  # 2 × 3
