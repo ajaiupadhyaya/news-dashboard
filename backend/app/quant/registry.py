@@ -10,6 +10,7 @@ from app.quant.strategies.bollinger_breakout import BollingerBreakout
 from app.quant.strategies.buy_hold_spy import BuyHoldSPY
 from app.quant.strategies.cross_sectional_momentum import CrossSectionalMomentum
 from app.quant.strategies.macro_regime_overlay import MacroRegimeOverlay
+from app.quant.strategies.multi_factor_combo import MultiFactorCombo
 from app.quant.strategies.news_sentiment_momentum import NewsSentimentMomentum
 from app.quant.strategies.pairs_trading import PairsTrading
 from app.quant.strategies.rsi_mean_reversion import RsiMeanReversion
@@ -23,6 +24,7 @@ STRATEGIES: tuple[Strategy, ...] = (
     BollingerBreakout(),
     NewsSentimentMomentum(),
     MacroRegimeOverlay(),
+    MultiFactorCombo(),
     BuyHoldSPY(),
 )
 
