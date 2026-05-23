@@ -111,3 +111,62 @@ def test_run_grid_without_constraint_runs_all_combos():
         initial_equity=100_000,
     )
     assert len(df) == 6  # 2 × 3
+
+
+def test_simulate_fills_buys_when_target_higher():
+    from app.quant.engine import simulate_fills
+    current = {"SPY": {"qty": 0, "avg_cost": 0.0}}
+    target = {"SPY": {"qty": 100, "weight": 1.0}}
+    fills, new_positions = simulate_fills(
+        current_positions=current, target_positions=target,
+        prices={"SPY": 470.0}, cost_model=CostModel(commission=0, slippage_bps=5),
+    )
+    assert len(fills) == 1
+    assert fills[0]["symbol"] == "SPY"
+    assert fills[0]["side"] == "buy"
+    assert fills[0]["qty"] == 100
+    # 5 bps adverse: 470 * 1.0005 = 470.235
+    assert abs(fills[0]["price"] - 470.235) < 1e-6
+    assert new_positions["SPY"]["qty"] == 100
+
+
+def test_simulate_fills_sells_when_target_lower():
+    from app.quant.engine import simulate_fills
+    current = {"SPY": {"qty": 100, "avg_cost": 470.0}}
+    target = {"SPY": {"qty": 50, "weight": 0.5}}
+    fills, new_positions = simulate_fills(
+        current_positions=current, target_positions=target,
+        prices={"SPY": 472.0}, cost_model=CostModel(commission=0, slippage_bps=5),
+    )
+    assert len(fills) == 1
+    assert fills[0]["side"] == "sell"
+    assert fills[0]["qty"] == 50
+    assert new_positions["SPY"]["qty"] == 50
+
+
+def test_simulate_fills_noop_when_target_equals_current():
+    from app.quant.engine import simulate_fills
+    current = {"SPY": {"qty": 100, "avg_cost": 470.0}}
+    target = {"SPY": {"qty": 100, "weight": 1.0}}
+    fills, new_positions = simulate_fills(
+        current_positions=current, target_positions=target,
+        prices={"SPY": 472.0}, cost_model=CostModel(),
+    )
+    assert fills == []
+    assert new_positions["SPY"]["qty"] == 100
+
+
+def test_simulate_fills_handles_new_and_closed_symbols():
+    from app.quant.engine import simulate_fills
+    current = {"AAPL": {"qty": 50, "avg_cost": 200.0}}
+    target = {"MSFT": {"qty": 40, "weight": 1.0}}
+    fills, new_positions = simulate_fills(
+        current_positions=current, target_positions=target,
+        prices={"AAPL": 210.0, "MSFT": 410.0},
+        cost_model=CostModel(commission=0, slippage_bps=0),
+    )
+    sides = {(f["symbol"], f["side"]) for f in fills}
+    assert ("AAPL", "sell") in sides
+    assert ("MSFT", "buy") in sides
+    assert "AAPL" not in new_positions
+    assert new_positions["MSFT"]["qty"] == 40

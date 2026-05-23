@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
-from app.quant.cost_model import CostModel
+from app.quant.cost_model import CostModel, apply_slippage
 from app.quant.strategies.base import Strategy, StrategyContext
 
 
@@ -227,3 +227,72 @@ def run_grid(
         )
         rows.append({**params, **res.metrics})
     return pd.DataFrame(rows)
+
+
+def simulate_fills(
+    *,
+    current_positions: dict[str, dict],
+    target_positions: dict[str, dict],
+    prices: dict[str, float],
+    cost_model: CostModel,
+) -> tuple[list[dict], dict[str, dict]]:
+    """Compute the fills required to move from current → target positions
+    and return (fills, new_positions).
+
+    `current_positions` / `target_positions`:
+        symbol -> {qty: int, avg_cost: float[, weight: float]}
+    `prices`: symbol -> close price for the day.
+
+    `fills` is a list of dicts ready for `strategy_trades` insert.
+    `new_positions` mirrors `current_positions` after applying the fills.
+    """
+    fills: list[dict] = []
+    new: dict[str, dict] = {sym: dict(pos) for sym, pos in current_positions.items()}
+
+    symbols = set(current_positions) | set(target_positions)
+    for sym in sorted(symbols):
+        cur_qty = current_positions.get(sym, {}).get("qty", 0)
+        tgt_qty = target_positions.get(sym, {}).get("qty", 0)
+        delta = tgt_qty - cur_qty
+        if delta == 0:
+            continue
+        price_raw = prices.get(sym)
+        if price_raw is None:
+            # No price today — skip; the runner decides whether to liquidate.
+            continue
+        # Side mapping: positive delta when going from short to less-short is a "cover",
+        # else "buy". Negative delta when going from long to less-long is "sell",
+        # else "short". Q1a strategies are long-only so the simpler branch suffices.
+        if delta > 0:
+            side = "cover" if cur_qty < 0 else "buy"
+        else:
+            side = "short" if tgt_qty < 0 and cur_qty >= 0 else "sell"
+        fill_price = apply_slippage(
+            price_raw, side=side, slippage_bps=cost_model.slippage_bps,
+        )
+        qty = abs(delta)
+        notional = qty * fill_price
+        fills.append({
+            "symbol": sym,
+            "side": side,
+            "qty": qty,
+            "price": fill_price,
+            "commission": cost_model.commission,
+            "notional": notional,
+        })
+        # Update position
+        if tgt_qty == 0:
+            new.pop(sym, None)
+        else:
+            # Weighted-average cost basis on additive buys; reset on side flip.
+            if cur_qty == 0 or (cur_qty > 0) != (tgt_qty > 0):
+                new[sym] = {"qty": tgt_qty, "avg_cost": fill_price}
+            elif (tgt_qty > cur_qty > 0) or (tgt_qty < cur_qty < 0):
+                old_basis = current_positions[sym].get("avg_cost", fill_price)
+                added = qty
+                new_avg = (old_basis * abs(cur_qty) + fill_price * added) / abs(tgt_qty)
+                new[sym] = {"qty": tgt_qty, "avg_cost": new_avg}
+            else:
+                # Partial close — keep existing avg_cost.
+                new[sym] = {"qty": tgt_qty, "avg_cost": current_positions[sym]["avg_cost"]}
+    return fills, new
