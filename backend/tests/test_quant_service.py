@@ -73,3 +73,48 @@ def test_build_overview_recent_trades(db):
     trades = payload["recent_trades"]
     assert len(trades) == 1
     assert trades[0]["symbol"] == "SPY"
+
+
+def test_build_strategy_detail_returns_full_payload(db):
+    _seed_strategy_with_equity(db, "buy-hold-spy",
+                                [(f"2025-01-{i:02d}", 100_000 * (1 + 0.001 * i))
+                                 for i in range(2, 32)])
+    # Also insert a strategy_runs row with summary metrics + windows + sweep.
+    from app.database import strategy_runs
+    with get_engine().begin() as conn:
+        conn.execute(insert(strategy_runs).values(
+            strategy_slug="buy-hold-spy",
+            run_kind="inception-walkforward",
+            started_at="2025-05-22T00:00:00Z",
+            finished_at="2025-05-22T00:05:00Z",
+            status="success",
+            progress=json.dumps({"windows_done": 2, "windows_total": 2}),
+            summary_metrics=json.dumps({"total_return": 0.5, "sharpe": 1.0,
+                                         "max_drawdown": -0.1}),
+            walkforward_windows=json.dumps([
+                {"train_start": "2018-01-02", "train_end": "2020-12-31",
+                 "test_start": "2021-01-02", "test_end": "2021-12-31",
+                 "chosen_params": {}, "oos_metrics": {"sharpe": 1.0}},
+            ]),
+            param_sweep=json.dumps([]),
+        ))
+    from app.services.quant_service import build_strategy_detail
+    detail = build_strategy_detail("buy-hold-spy")
+    assert detail["slug"] == "buy-hold-spy"
+    assert detail["name"]
+    assert detail["methodology_blurb"]
+    assert "chosen_params" in detail
+    assert "equity_series" in detail
+    assert isinstance(detail["equity_series"], list)
+    assert "drawdown_series" in detail
+    assert "monthly_returns" in detail
+    assert "tear_sheet" in detail
+    assert "walkforward_windows" in detail
+    assert "param_sweep" in detail
+    assert "current_positions" in detail
+    assert "recent_trades" in detail
+
+
+def test_build_strategy_detail_unknown_returns_none(db):
+    from app.services.quant_service import build_strategy_detail
+    assert build_strategy_detail("does-not-exist") is None
