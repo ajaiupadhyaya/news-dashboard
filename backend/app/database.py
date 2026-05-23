@@ -3,8 +3,8 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
-                        create_engine, delete, insert, select)
+from sqlalchemy import (BigInteger, Column, Float, Integer, MetaData, String,
+                        Table, Text, create_engine, delete, insert, select)
 from sqlalchemy.engine import Engine
 
 from app.config import get_settings
@@ -84,7 +84,10 @@ bar_cache = Table(
     Column("low", Float),
     Column("close", Float),
     Column("adj_close", Float),
-    Column("volume", Integer),
+    # BigInteger because split-adjusted historical volumes (e.g. NVDA after the
+    # 4:1 + 10:1 splits = 40x multiplier on pre-2021 daily volumes) routinely
+    # exceed Postgres INTEGER's 2.1B max. BIGINT goes up to 9.2e18.
+    Column("volume", BigInteger),
     Column("source", String(20)),                     # "yfinance"
     Column("fetched_at", String(32)),
 )

@@ -37,11 +37,38 @@ logging.basicConfig(
 # scheduler jobs keep their own warm_bars logging.)
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
-from app.database import init_db
+from sqlalchemy import text
+
+from app.database import get_engine, init_db
 from app.quant.bars import fetch_and_cache, get_cached_dates
 from app.quant.orchestration import inception_walkforward
 from app.quant.registry import STRATEGIES
 from app.quant.universe import SP500_SYMBOLS
+
+
+def _migrate_volume_to_bigint() -> None:
+    """Idempotent: widen bar_cache.volume to BIGINT on Postgres if it's still
+    INTEGER from an earlier deploy. SQLite is dynamically typed so no-op there.
+
+    Why: split-adjusted historical daily volumes for NVDA-class names exceed
+    INTEGER's 2.1B max (NVDA had 4:1 + 10:1 splits, so pre-2021 daily volumes
+    of ~300M shares become ~12B after retro-adjustment).
+    """
+    engine = get_engine()
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.begin() as conn:
+        row = conn.execute(text("""
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'bar_cache' AND column_name = 'volume'
+        """)).first()
+        if row is None:
+            return   # table doesn't exist yet → init_db will create with BIGINT
+        if row[0] == "bigint":
+            return   # already migrated
+        print(f"  migrating bar_cache.volume {row[0]} → bigint…")
+        conn.execute(text("ALTER TABLE bar_cache ALTER COLUMN volume TYPE BIGINT"))
+        print("  migration complete")
 
 
 def _banner(msg: str) -> None:
@@ -63,6 +90,7 @@ def main() -> None:
             return
 
     init_db()
+    _migrate_volume_to_bigint()
 
     # 1. Fetch bars for the full universe (≥7 years of daily data).
     _banner("[1/2] Fetching daily bars (~1.4M rows expected)")
