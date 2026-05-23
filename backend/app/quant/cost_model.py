@@ -42,3 +42,15 @@ def apply_slippage(price: float, *, side: str, slippage_bps: float) -> float:
     if side in ("sell", "short"):
         return round(price * (1 - mult), 6)
     raise ValueError(f"Unknown side: {side}")
+
+
+def target_qty_from_weight(*, weight: float, equity: float, price: float) -> int:
+    """Convert a target portfolio weight into an integer share quantity.
+
+    Negative weights produce negative quantities (short positions).
+    Zero or invalid price returns 0 to avoid division errors.
+    """
+    if price <= 0 or equity <= 0:
+        return 0
+    raw = (weight * equity) / price
+    return int(raw) if raw >= 0 else -int(-raw)

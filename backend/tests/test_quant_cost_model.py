@@ -34,3 +34,23 @@ def test_apply_slippage_zero_bps_returns_input():
 def test_cost_model_serializes_to_dict():
     c = CostModel(commission=0.0, slippage_bps=5.0, allow_short=True)
     assert c.to_dict() == {"commission": 0.0, "slippage_bps": 5.0, "allow_short": True}
+
+
+def test_target_qty_from_weight_positive():
+    from app.quant.cost_model import target_qty_from_weight
+    assert target_qty_from_weight(weight=1.0, equity=100_000, price=200.0) == 500
+
+
+def test_target_qty_from_weight_negative_is_short():
+    from app.quant.cost_model import target_qty_from_weight
+    assert target_qty_from_weight(weight=-0.5, equity=100_000, price=200.0) == -250
+
+
+def test_target_qty_from_weight_zero_price_returns_zero():
+    from app.quant.cost_model import target_qty_from_weight
+    assert target_qty_from_weight(weight=0.5, equity=100_000, price=0.0) == 0
+
+
+def test_target_qty_from_weight_floors_to_int():
+    from app.quant.cost_model import target_qty_from_weight
+    assert target_qty_from_weight(weight=0.33, equity=100_000, price=199.5) == 165
