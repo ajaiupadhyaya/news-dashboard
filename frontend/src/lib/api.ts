@@ -7,6 +7,9 @@ import type {
   OverviewResponse,
   StoryDetail,
 } from './types';
+import type {
+  QuantOverview, StrategyDetail, TradesPage, RunStatus,
+} from './quant-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000';
 
@@ -95,4 +98,27 @@ export const api = {
     apiFetch<StoryDetail>(
       `/api/news/story/${encodeURIComponent(clusterId)}`,
     ),
+
+  quantOverview: () => apiFetch<QuantOverview>('/api/quant/overview'),
+
+  quantStrategy: (slug: string) =>
+    apiFetch<StrategyDetail>(`/api/quant/strategy/${encodeURIComponent(slug)}`),
+
+  quantStrategyTrades: (slug: string, opts: { cursor?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (opts.cursor) q.set('cursor', opts.cursor);
+    if (opts.limit) q.set('limit', String(opts.limit));
+    const suffix = q.toString();
+    return apiFetch<TradesPage>(
+      `/api/quant/strategy/${encodeURIComponent(slug)}/trades${suffix ? '?' + suffix : ''}`,
+    );
+  },
+
+  quantRecompute: (slug: string) =>
+    apiFetch<{ run_id: number; status: string }>(
+      `/api/quant/strategy/${encodeURIComponent(slug)}/recompute-backtest`,
+      { method: 'POST' },
+    ),
+
+  quantRun: (runId: number) => apiFetch<RunStatus>(`/api/quant/runs/${runId}`),
 };
