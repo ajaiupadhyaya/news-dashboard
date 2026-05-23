@@ -76,3 +76,57 @@ def test_strategy_runs_row(db):
             param_sweep=None,
         )).inserted_primary_key[0]
     assert rid is not None
+
+
+def test_strategy_equity_pk_is_slug_date(db):
+    from app.database import strategy_equity
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+    with get_engine().begin() as conn:
+        conn.execute(insert(strategy_equity).values(
+            strategy_slug="buy-hold-spy", date="2026-01-02",
+            equity=100_000.0, cash=0.0,
+            gross_exposure=100_000.0, net_exposure=100_000.0,
+            daily_return=0.0, phase="forward",
+        ))
+        with pytest.raises(IntegrityError):
+            conn.execute(insert(strategy_equity).values(
+                strategy_slug="buy-hold-spy", date="2026-01-02",
+                equity=99_000.0, cash=0.0,
+                gross_exposure=99_000.0, net_exposure=99_000.0,
+                daily_return=-0.01, phase="forward",
+            ))
+
+
+def test_strategy_trades_round_trip(db):
+    from app.database import strategy_trades
+    with get_engine().begin() as conn:
+        tid = conn.execute(insert(strategy_trades).values(
+            strategy_slug="sma-crossover", date="2026-01-02", symbol="SPY",
+            side="buy", qty=100, price=471.5, commission=0.0,
+            notional=47_150.0, phase="forward",
+        )).inserted_primary_key[0]
+        row = conn.execute(
+            select(strategy_trades).where(strategy_trades.c.id == tid)
+        ).first()
+    assert row.symbol == "SPY"
+    assert row.side == "buy"
+    assert row.qty == 100
+
+
+def test_strategy_positions_pk_is_slug_symbol(db):
+    from app.database import strategy_positions
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+    with get_engine().begin() as conn:
+        conn.execute(insert(strategy_positions).values(
+            strategy_slug="buy-hold-spy", symbol="SPY",
+            qty=210, avg_cost=470.5,
+            opened_at="2025-01-02", last_marked_at="2026-01-02",
+        ))
+        with pytest.raises(IntegrityError):
+            conn.execute(insert(strategy_positions).values(
+                strategy_slug="buy-hold-spy", symbol="SPY",
+                qty=1, avg_cost=1.0,
+                opened_at="x", last_marked_at="x",
+            ))

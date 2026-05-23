@@ -119,6 +119,42 @@ strategy_runs = Table(
     Column("param_sweep", Text),                     # JSON, nullable
 )
 
+strategy_equity = Table(
+    "strategy_equity", metadata,
+    Column("strategy_slug", String(64), primary_key=True),
+    Column("date", String(10), primary_key=True),
+    Column("equity", Float),
+    Column("cash", Float),
+    Column("gross_exposure", Float),
+    Column("net_exposure", Float),
+    Column("daily_return", Float),
+    Column("phase", String(10)),                     # "backtest" | "forward"
+)
+
+strategy_trades = Table(
+    "strategy_trades", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("strategy_slug", String(64), index=True),
+    Column("date", String(10), index=True),
+    Column("symbol", String(20)),
+    Column("side", String(10)),                      # "buy"|"sell"|"short"|"cover"
+    Column("qty", Integer),
+    Column("price", Float),
+    Column("commission", Float),
+    Column("notional", Float),
+    Column("phase", String(10)),
+)
+
+strategy_positions = Table(
+    "strategy_positions", metadata,
+    Column("strategy_slug", String(64), primary_key=True),
+    Column("symbol", String(20), primary_key=True),
+    Column("qty", Integer),
+    Column("avg_cost", Float),
+    Column("opened_at", String(10)),
+    Column("last_marked_at", String(10)),
+)
+
 _engine: Engine | None = None
 
 
