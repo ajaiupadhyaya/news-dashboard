@@ -24,9 +24,11 @@ from sqlalchemy import delete, insert, select, update
 from app.database import (
     get_engine, strategies, strategy_equity, strategy_runs, strategy_trades,
 )
+from app.quant import econ_signal, news_signal
 from app.quant.bars import load_close_matrix
 from app.quant.cost_model import CostModel
 from app.quant.engine import run_grid, run_single
+from app.quant.fundamentals import get_fundamentals_batch
 from app.quant.strategies.base import Strategy, StrategyContext
 from app.quant.universe import get_universe
 from app.quant.walkforward import build_walkforward_windows, stitch_oos_equity
@@ -36,6 +38,48 @@ logger = logging.getLogger(__name__)
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _build_context(
+    strategy: Strategy,
+    bars: pd.DataFrame,
+    *,
+    universe_symbols: list[str],
+) -> StrategyContext:
+    """Populate auxiliary signal data per strategy needs.
+
+    Most strategies (the 6 classics + benchmark) ignore context entirely
+    — they get an empty StrategyContext().
+    """
+    ctx = StrategyContext()
+    slug = strategy.spec.slug
+
+    if slug == "news-sentiment-momentum":
+        if len(bars) > 0:
+            start = bars.index[0].strftime("%Y-%m-%d")
+            end = bars.index[-1].strftime("%Y-%m-%d")
+            coverage = news_signal.news_coverage_matrix(
+                symbols=universe_symbols, start=start, end=end,
+            )
+            # Phase 3 News doesn't score sentiment yet — pass zeros.
+            sentiment = pd.DataFrame(
+                0.0, index=coverage.index, columns=coverage.columns,
+            )
+            setattr(ctx, "_news_signal", {
+                "coverage": coverage, "sentiment": sentiment,
+            })
+
+    elif slug == "macro-regime-overlay":
+        if len(bars) > 0:
+            dates = bars.index.strftime("%Y-%m-%d")
+            labels = [econ_signal.classify_regime(as_of=d) for d in dates]
+            regime = pd.Series(labels, index=dates)
+            setattr(ctx, "_regime", regime)
+
+    elif slug == "multi-factor-combo":
+        ctx.fundamentals = get_fundamentals_batch(universe_symbols)
+
+    return ctx
 
 
 def _upsert_strategy_row(strategy: Strategy, chosen_params: dict) -> None:
@@ -157,6 +201,9 @@ def inception_walkforward(
                 f"no bars in cache for {strategy.spec.slug}; run fetch_and_cache first"
             )
 
+        # 2b. Build strategy context (signal data for alpha strategies).
+        ctx = _build_context(strategy, bars, universe_symbols=symbols)
+
         # 3. Build windows.
         windows = build_walkforward_windows(
             bars.index, train_years=train_years,
@@ -185,6 +232,7 @@ def inception_walkforward(
                 strategy, train_bars, grid=strategy.sweep_grid,
                 cost_model=cost_model, initial_equity=initial_equity,
                 constraint=constraint,
+                ctx=ctx,
             )
 
             if strategy.sweep_grid and not grid_df.empty:
@@ -215,6 +263,7 @@ def inception_walkforward(
             oos = run_single(
                 strategy, test_bars, params=best_params,
                 cost_model=cost_model, initial_equity=initial_equity,
+                ctx=ctx,
             )
             oos_equity_segments.append(oos.equity)
             oos_trades.append(oos.trades.assign(strategy_slug=strategy.spec.slug))

@@ -34,6 +34,8 @@ def load_series(series_id: str, *, start: str, end: str) -> pd.Series:
 
 
 def _latest_value_on_or_before(s: pd.Series, as_of: str) -> float | None:
+    if s.empty:
+        return None
     sub = s[s.index <= as_of]
     if sub.empty:
         return None
@@ -41,6 +43,8 @@ def _latest_value_on_or_before(s: pd.Series, as_of: str) -> float | None:
 
 
 def _trend(s: pd.Series, as_of: str, lookback_days: int = 90) -> float | None:
+    if s.empty:
+        return None
     sub = s[s.index <= as_of]
     if len(sub) < 2:
         return None
