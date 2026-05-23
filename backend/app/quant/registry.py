@@ -8,12 +8,14 @@ from __future__ import annotations
 from app.quant.strategies.base import Strategy
 from app.quant.strategies.bollinger_breakout import BollingerBreakout
 from app.quant.strategies.buy_hold_spy import BuyHoldSPY
+from app.quant.strategies.cross_sectional_momentum import CrossSectionalMomentum
 from app.quant.strategies.rsi_mean_reversion import RsiMeanReversion
 from app.quant.strategies.sma_crossover import SmaCrossover
 
 STRATEGIES: tuple[Strategy, ...] = (
     SmaCrossover(),
     RsiMeanReversion(),
+    CrossSectionalMomentum(),
     BollingerBreakout(),
     BuyHoldSPY(),
 )
